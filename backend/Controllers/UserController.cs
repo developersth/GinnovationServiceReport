@@ -27,6 +27,8 @@ namespace backend.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<User>> Get(string id)
         {
+                        // Check if a project with the same name already exists
+
             var user = await _userRepository.GetByIdAsync(id);
             if (user == null)
             {
@@ -35,10 +37,17 @@ namespace backend.Controllers
             return Ok(user);
         }
 
+
         [HttpPost]
         public async Task<ActionResult<User>> Create([FromBody] User user)
         {
             user.Id = null;
+
+            var existingUser = await _userRepository.GetByNameAsync(user.Name);
+            if (existingUser != null)
+            {
+                return Conflict(new { message = "A project with this name already exists." });
+            }
 
             await _userRepository.CreateAsync(user);
             return CreatedAtAction(nameof(Get), new { id = user.Id }, user);

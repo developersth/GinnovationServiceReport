@@ -76,7 +76,8 @@ export default function ServiceReportTable({ reports, projects, onEdit, onDelete
   };
 
   return (
-    <TableContainer component={Paper}>
+    // Make the TableContainer responsive by allowing horizontal scrolling
+    <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
       <Table sx={{ minWidth: 650 }} aria-label="service report table">
         <TableHead>
           <TableRow>

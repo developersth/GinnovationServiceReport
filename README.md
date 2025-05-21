@@ -5,6 +5,8 @@ docker compose -f docker-compose-mssql-arm.yml up --build -d
 
 docker compose -f docker-compose-mongo.yml up --build -d
 
+docker compose -f docker-compose-mongo.yml down
+
 
 docker compose up --build -d 
 docker compose down -d

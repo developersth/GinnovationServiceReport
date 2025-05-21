@@ -1,33 +1,44 @@
 // src/lib/utils.ts
-import dayjs from 'dayjs';
-import 'dayjs/locale/th';
 
-dayjs.locale('th');
+// API_BASE_URL จะถูกดึงมาจากตัวแปรสภาพแวดล้อม
+// NEXT_PUBLIC_ เป็น Prefix ที่จำเป็นสำหรับตัวแปรสภาพแวดล้อมที่ต้องการให้เข้าถึงได้ในฝั่ง Client-side ของ Next.js
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:7001'; // Fallback for development
 
-// --- ต้องมี 'export' หน้า const API_BASE_URL ---
-export const API_BASE_URL = 'https://localhost:7001'; // เปลี่ยนเป็น URL API จริงของคุณ
-// ---------------------------------------------------------------
-
-export function formatDate(dateString: string): string {
-  if (!dateString) {
-    return '';
-  }
-  return dayjs(dateString).format('D MMMM BBBB');
-}
-
+/**
+ * รวม URL รูปภาพเข้ากับ Base URL ของ API
+ * @param relativePath Path สัมพัทธ์ของรูปภาพ (เช่น /uploads/image.jpg)
+ * @returns URL เต็มของรูปภาพ
+ */
 export function combineImageUrl(relativePath: string): string {
   if (!relativePath) {
-    return '';
+    return 'https://placehold.co/120x120/cccccc/ffffff?text=No+Image'; // Placeholder image if no path
   }
+  // ตรวจสอบว่าเป็น URL เต็มแล้วหรือไม่
   if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) {
     return relativePath;
   }
-  const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
-  const path = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;
-
-  return `${baseUrl}/${path}`;
+  // รวม Base URL กับ Path สัมพัทธ์
+  return `${API_BASE_URL}${relativePath}`;
 }
 
-export function generateUniqueId(): string {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+/**
+ * จัดรูปแบบวันที่จากสตริง ISO 8601 ให้เป็นรูปแบบที่อ่านง่าย
+ * @param dateString วันที่ในรูปแบบ ISO 8601 (YYYY-MM-DD)
+ * @returns วันที่ในรูปแบบ DD/MM/YYYY หรือสตริงว่างเปล่า
+ */
+export function formatDate(dateString: string): string {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    // ใช้ toLocaleDateString เพื่อให้รูปแบบวันที่เป็นไปตาม Local ของผู้ใช้งาน
+    // หรือกำหนด options เพื่อควบคุมรูปแบบที่แน่นอน
+    return date.toLocaleDateString('th-TH', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return dateString; // Return original string if formatting fails
+  }
 }

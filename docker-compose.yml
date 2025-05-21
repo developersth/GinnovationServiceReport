@@ -2,12 +2,12 @@ version: '3.8'
 
 services:
   backend:
-    container_name: ginnovation-backend
+    container_name: backend
     build:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "5000:80"
+      - "5000:5000"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - MongoDB__ConnectionString=mongodb://admin:secret@mongo:27017
@@ -15,9 +15,22 @@ services:
     depends_on:
       - mongo
 
+  frontend: # Added Next.js frontend service
+    container_name: frontend
+    build:
+      context: ./frontend # Assuming your Next.js app is in a 'frontend' directory
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000" # Next.js default port
+    environment:
+      # This URL points to the backend service within the Docker network
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:5000 
+    depends_on:
+      - backend # Ensure backend starts before frontend
+
   mongo:
     image: mongo
-    container_name: ginnovation-mongo
+    container_name: mongodb
     ports:
       - "27017:27017"
     environment:
@@ -25,6 +38,10 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: secret
     volumes:
       - mongo_data:/data/db
+
+networks:
+  backend:
+    driver: bridge  # Docker bridge network for internal communication
 
 volumes:
   mongo_data:

@@ -1,43 +1,47 @@
 // src/app/admin/layout.tsx
-'use client'; // <-- เพิ่ม 'use client' เนื่องจากเราจะใช้ useRouter และ useState/useEffect
+'use client';
 
 import { ReactNode, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation'; // Import useRouter
+import { useRouter } from 'next/navigation';
 import { MUIThemeProvider } from '../context/MUIThemeContext';
 import ThemeMUIToggleButton from '../components/ThemeMUIToggleButton';
 import Button from '@mui/material/Button';
-import LogoutIcon from '@mui/icons-material/Logout'; // เพิ่มไอคอน Logout
-import AccountCircleIcon from '@mui/icons-material/AccountCircle'; // เพิ่มไอคอน User Profile (optional)
-import Box from '@mui/material/Box'; // เพิ่ม Box สำหรับจัดวาง
+import LogoutIcon from '@mui/icons-material/Logout';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
 
-import { logout, checkAuth } from '../lib/auth'; // Import ฟังก์ชัน logout และ checkAuth
+import { logout, checkAuth } from '../lib/auth';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State to manage sidebar visibility
 
   useEffect(() => {
-    // ตรวจสอบสถานะการ Login เมื่อ component mount
     setIsAuthenticated(checkAuth());
-    // หากผู้ใช้ไม่ได้ล็อกอิน ให้ redirect ไปหน้า Login
     if (!checkAuth()) {
       router.push('/login');
     }
-  }, [router]); // ตรวจสอบ router เพื่อให้แน่ใจว่า effect ทำงานเมื่อ router เปลี่ยน
+  }, [router]);
 
   const handleLogout = async () => {
     try {
       await logout();
       setIsAuthenticated(false);
-      router.push('/login'); // Redirect ไปหน้า Login หลังจาก Logout
+      router.push('/login');
     } catch (error) {
       console.error('Logout failed:', error);
-      // อาจจะแสดง error message ให้ผู้ใช้ทราบ
     }
   };
 
-  // ถ้ายังไม่ได้รับการยืนยันตัวตน หรือกำลังโหลดอยู่ อาจจะแสดง loading หรือไม่ render อะไรเลย
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -49,33 +53,65 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <MUIThemeProvider>
       <div className="flex min-h-screen">
+        {/* Mobile Overlay for Sidebar */}
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+            onClick={toggleSidebar}
+          ></div>
+        )}
+
         {/* Sidebar */}
-        <aside className="w-64 bg-gray-800 p-4 space-y-4 text-white"> {/* เพิ่ม text-white */}
-          <h2 className="text-xl font-bold mb-6">Ginnovation</h2>
+        <aside
+          className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-800 p-4 space-y-4 text-white
+                      transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+                      md:relative md:translate-x-0 md:flex-shrink-0 md:block
+                      transition-transform duration-300 ease-in-out`}
+        >
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold">Ginnovation</h2>
+            {/* Close button for mobile sidebar: visible only on xs, hidden on md and up */}
+            <IconButton
+              onClick={toggleSidebar}
+              sx={{ display: { xs: 'block', md: 'none' } }} // Explicitly hide on md and up using MUI sx prop
+              className="text-white" // Keep text-white for mobile
+              aria-label="close sidebar"
+            >
+              <CloseIcon />
+            </IconButton>
+          </div>
           <nav className="space-y-2">
-            <Link href="/admin/dashboard" className="block hover:text-blue-400">🏠 Dashboard</Link>
-            <Link href="/admin/reports" className="block hover:text-blue-400">📑 Reports</Link>
-            <Link href="/admin/users" className="block hover:text-blue-400">👥 Users</Link>
-            <Link href="/admin/projects" className="block hover:text-blue-400">📊 Projects</Link>
-            <Link href="/admin/services" className="block hover:text-blue-400">🛠️ Service Reports</Link>
+            <Link href="/admin/dashboard" className="block hover:text-blue-400" onClick={toggleSidebar}>🏠 Dashboard</Link>
+            <Link href="/admin/reports" className="block hover:text-blue-400" onClick={toggleSidebar}>📑 Reports</Link>
+            <Link href="/admin/users" className="block hover:text-blue-400" onClick={toggleSidebar}>👥 Users</Link>
+            <Link href="/admin/projects" className="block hover:text-blue-400" onClick={toggleSidebar}>📊 Projects</Link>
+            <Link href="/admin/services" className="block hover:text-blue-400" onClick={toggleSidebar}>🛠️ Service Reports</Link>
           </nav>
         </aside>
 
-        {/* Content */}
-        <div className="flex-1 p-6">
+        {/* Content Area */}
+        <div className="flex-1 flex flex-col">
           {/* Topbar */}
-          <header className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-semibold">Dashboard</h1>
+          <header className="flex justify-end items-center p-4 bg-white dark:bg-gray-700 shadow-md md:justify-end">
+            {/* Hamburger menu: visible only on xs (mobile), hidden on md and up */}
+            <Box sx={{ display: { xs: 'block', md: 'none' } }} className="mr-auto">
+              <IconButton
+                onClick={toggleSidebar}
+                color="inherit" // Use inherit to match theme text color
+                aria-label="open sidebar"
+              >
+                <MenuIcon />
+              </IconButton>
+            </Box>
             <div className="flex items-center space-x-4">
               <ThemeMUIToggleButton />
-              {/* === ปุ่ม Logout และ User Profile === */}
               <Button
                 variant="outlined"
-                color="inherit" // ใช้ inherit เพื่อให้ปุ่มเป็นไปตาม Theme (dark/light)
+                color="inherit"
                 startIcon={<AccountCircleIcon />}
                 sx={{
-                  color: 'inherit', // ทำให้สีข้อความเป็นไปตาม theme
-                  borderColor: 'rgba(255, 255, 255, 0.5)', // สี border ใน dark mode
+                  color: 'inherit',
+                  borderColor: 'rgba(255, 255, 255, 0.5)',
                   '&:hover': {
                     borderColor: 'rgba(255, 255, 255, 0.8)',
                   },
@@ -85,17 +121,19 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               </Button>
               <Button
                 variant="contained"
-                color="error" // ใช้สีแดงสำหรับปุ่ม Logout
+                color="error"
                 startIcon={<LogoutIcon />}
                 onClick={handleLogout}
               >
                 Logout
               </Button>
-              {/* ==================================== */}
             </div>
           </header>
 
-          {children}
+          {/* Main Content */}
+          <main className="flex-1 p-6">
+            {children}
+          </main>
         </div>
       </div>
     </MUIThemeProvider>

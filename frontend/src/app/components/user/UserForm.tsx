@@ -2,6 +2,7 @@
 'use client';
 
 import * as React from 'react';
+import { useState } from 'react'; // Import useState
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
@@ -13,18 +14,59 @@ import FormControl from '@mui/material/FormControl';
 import { User } from '../../types';
 
 interface UserFormProps {
-  initialData?: User; // ใช้สำหรับแก้ไข: ถ้ามีค่าคือโหมดแก้ไข
+  initialData?: User; // Used for editing: if there's a value, it's edit mode
   onSubmit: (user: Omit<User, 'id'> | User) => void;
   onCancel: () => void;
 }
 
 export default function UserForm({ initialData, onSubmit, onCancel }: UserFormProps) {
-  const [name, setName] = React.useState(initialData?.name || '');
-  const [email, setEmail] = React.useState(initialData?.email || '');
-  const [role, setRole] = React.useState<User['role']>(initialData?.role || 'viewer'); // Default role
+  const [name, setName] = useState(initialData?.name || '');
+  const [email, setEmail] = useState(initialData?.email || '');
+  const [role, setRole] = useState<User['role']>(initialData?.role || 'viewer'); // Default role
+
+  // State for validation errors
+  const [nameError, setNameError] = useState(false);
+  const [nameHelperText, setNameHelperText] = useState('');
+  const [emailError, setEmailError] = useState(false);
+  const [emailHelperText, setEmailHelperText] = useState('');
+
+  const validateForm = () => {
+    let isValid = true;
+
+    // Validate Name
+    if (!name.trim()) {
+      setNameError(true);
+      setNameHelperText('ชื่อผู้ใช้งานห้ามว่างเปล่า');
+      isValid = false;
+    } else {
+      setNameError(false);
+      setNameHelperText('');
+    }
+
+    // Validate Email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim()) {
+      setEmailError(true);
+      setEmailHelperText('อีเมลห้ามว่างเปล่า');
+      isValid = false;
+    } else if (!emailRegex.test(email)) {
+      setEmailError(true);
+      setEmailHelperText('รูปแบบอีเมลไม่ถูกต้อง');
+      isValid = false;
+    } else {
+      setEmailError(false);
+      setEmailHelperText('');
+    }
+
+    return isValid;
+  };
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
+    if (!validateForm()) {
+      return; // Stop submission if validation fails
+    }
+
     if (initialData) {
       // Edit mode
       onSubmit({ ...initialData, name, email, role });
@@ -61,16 +103,32 @@ export default function UserForm({ initialData, onSubmit, onCancel }: UserFormPr
         id="user-name"
         label="ชื่อผู้ใช้งาน"
         value={name}
-        onChange={(e) => setName(e.target.value)}
+        onChange={(e) => {
+          setName(e.target.value);
+          if (nameError && e.target.value.trim()) { // Clear error on change if valid
+            setNameError(false);
+            setNameHelperText('');
+          }
+        }}
         required
+        error={nameError}
+        helperText={nameHelperText}
       />
       <TextField
         id="user-email"
         label="อีเมล"
         type="email"
         value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        onChange={(e) => {
+          setEmail(e.target.value);
+          if (emailError && e.target.value.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value)) { // Clear error on change if valid
+            setEmailError(false);
+            setEmailHelperText('');
+          }
+        }}
         required
+        error={emailError}
+        helperText={emailHelperText}
       />
       <FormControl fullWidth sx={{ m: 1 }}>
         <InputLabel id="user-role-label">บทบาท</InputLabel>

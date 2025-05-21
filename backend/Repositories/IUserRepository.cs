@@ -14,6 +14,7 @@ public interface IUserRepository
     Task CreateAsync(User user);
     Task UpdateAsync(string id, User user);
     Task DeleteAsync(string id);
+    Task<User?> GetByNameAsync(string name);
 }
 
 public class UserRepository : IUserRepository
@@ -32,6 +33,9 @@ public class UserRepository : IUserRepository
 
     public async Task<User?> GetByIdAsync(string id) =>
         await _collection.Find(r => r.Id == id).FirstOrDefaultAsync();
+
+    public async Task<User?> GetByNameAsync(string name)  =>
+         await _collection.Find(p => p.Name == name).FirstOrDefaultAsync();
 
     public async Task CreateAsync(User user)
     {
