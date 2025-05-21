@@ -15,6 +15,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import Avatar from '@mui/material/Avatar';
 import { Project } from '../../types';
+import { combineImageUrl } from '../../lib/utils'; // <--- เพิ่มการ import นี้
 
 interface ProjectTableProps {
   projects: Project[];
@@ -45,7 +46,8 @@ export default function ProjectTable({ projects, onEdit, onDelete }: ProjectTabl
               </TableCell>
               <TableCell>{project.name}</TableCell>
               <TableCell>
-                <Avatar alt={project.name} src={project.imageUrl} variant="rounded" />
+                {/* --- แก้ไขตรงนี้: ใช้ combineImageUrl --- */}
+                <Avatar alt={project.name} src={combineImageUrl(project.imageUrl)} variant="rounded" />
               </TableCell>
               <TableCell align="center">
                 <IconButton aria-label="edit" color="primary" onClick={() => onEdit(project)}>

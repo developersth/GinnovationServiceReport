@@ -1,31 +1,28 @@
 // src/types/index.ts
 
-// Project interface (ของเดิม)
 export interface Project {
-  id: string; // รหัสโปรเจกต์ (UUID หรือ ID ที่สร้างขึ้น)
-  name: string; // ชื่อโปรเจกต์
-  imageUrl: string; // URL ของรูปภาพ
+  id: string;
+  name: string;
+  imageUrl: string; // URL ของรูปภาพที่ได้จาก Backend
+  imageFile?: File; // <-- เพิ่ม property นี้สำหรับ Frontend เพื่อเก็บ File object ชั่วคราว
 }
 
-
-// **เพิ่ม User interface ใหม่**
 export interface User {
-  id: string;      // รหัสผู้ใช้งาน (UUID หรือ ID ที่สร้างขึ้น)
-  name: string;    // ชื่อผู้ใช้งาน
-  email: string;   // อีเมล
-  role: 'admin' | 'editor' | 'viewer'; // บทบาทของผู้ใช้งาน
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'editor' | 'viewer';
 }
 
-// src/types/index.ts
 export interface ServiceReport {
   id: string; // รหัส Service Report (UUID หรือ ID ที่สร้างขึ้น)
   projectId: string; // รหัสโปรเจกต์ที่เกี่ยวข้อง
-  reporter: string; // ผู้แจ้ง
+  reportedBy: string; // ผู้แจ้ง
   complain: string; // Complain/ปัญหาที่แจ้ง
   causesOfFailure: string; // สาเหตุของปัญหา
   actionTaken: string; // การแก้ไข/ดำเนินการที่ทำ
   channel: string; // ช่องทางการแจ้ง (เช่น โทรศัพท์, อีเมล, Line)
-  imageUrls: string[]; // URLs ของรูปภาพที่แนบ (Array)
+  imagePaths: (string | File)[]; // <--- เปลี่ยนจาก imageUrls เป็น imagePaths และรองรับ File object
   reportDate: string; // วันที่แจ้ง (ISO 8601 format: YYYY-MM-DD)
-  status: 'open' | 'in progress' | 'resolved' | 'closed'; // สถานะ
+  status: 'Open' | 'In Progress' | 'Resolved'| 'Complete' | 'Closed'; // สถานะ
 }

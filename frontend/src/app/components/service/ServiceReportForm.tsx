@@ -10,6 +10,8 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import InputLabel from '@mui/material/InputLabel';
 import FormControl from '@mui/material/FormControl';
+import Avatar from '@mui/material/Avatar';
+import ListItemText from '@mui/material/ListItemText';
 import { ServiceReport, Project } from '../../types';
 import { getProjects } from '../../lib/data';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -17,84 +19,140 @@ import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import Input from '@mui/material/Input';
-import AttachFileIcon from '@mui/icons-material/AttachFile'; // เพิ่มไอคอนสำหรับปุ่มอัปโหลด
-import IconButton from '@mui/material/IconButton'; // เพิ่ม IconButton
-import DeleteIcon from '@mui/icons-material/Delete'; // เพิ่มไอคอนลบสำหรับรูปภาพ Preview
+import AttachFileIcon from '@mui/icons-material/AttachFile';
+import IconButton from '@mui/material/IconButton';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { combineImageUrl } from '../../lib/utils';
+import InputAdornment from '@mui/material/InputAdornment';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Chip from '@mui/material/Chip'; // Import Chip component
 
 interface ServiceReportFormProps {
   initialData?: ServiceReport;
   onSubmit: (report: Omit<ServiceReport, 'id'> | ServiceReport) => void;
   onCancel: () => void;
+  projects: Project[];
 }
 
 const channels = ['โทรศัพท์', 'อีเมล', 'Line', 'อื่นๆ'];
-const statuses = ['open', 'in progress', 'resolved', 'closed'];
+const statuses = ['Open', 'In Progress', 'Resolved', 'Complete', 'Closed'];
 
-export default function ServiceReportForm({ initialData, onSubmit, onCancel }: ServiceReportFormProps) {
+/**
+ * Determines the Material-UI Chip color based on the service report status.
+ * This function is duplicated from ServiceReportTable.tsx for consistency.
+ * @param status The status of the service report.
+ * @returns A Material-UI color variant string.
+ */
+const getStatusColor = (status: ServiceReport['status']): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
+  switch (status) {
+    case 'Open':
+      return 'error'; // Red for open issues
+    case 'In Progress':
+      return 'info'; // Blue for in progress
+    case 'Resolved':
+      return 'success'; // Green for resolved
+    case 'Complete':
+      return 'primary'; // Primary color for completed tasks
+    case 'Closed':
+      return 'default'; // Grey for closed tasks
+    default:
+      return 'default'; // Fallback to default
+  }
+};
+
+export default function ServiceReportForm({ initialData, onSubmit, onCancel, projects }: ServiceReportFormProps) {
   const [projectId, setProjectId] = React.useState(initialData?.projectId || '');
-  const [reporter, setReporter] = React.useState(initialData?.reporter || '');
+  const [reportedBy, setReportedBy] = React.useState(initialData?.reportedBy || '');
   const [complain, setComplain] = React.useState(initialData?.complain || '');
   const [causesOfFailure, setCausesOfFailure] = React.useState(initialData?.causesOfFailure || '');
   const [actionTaken, setActionTaken] = React.useState(initialData?.actionTaken || '');
   const [channel, setChannel] = React.useState(initialData?.channel || channels[0]);
-  // เปลี่ยน imageUrls ให้เป็น Array ของ Object { url: string, file: File | null }
-  // เพื่อเก็บไฟล์ต้นฉบับไว้สำหรับการอัปโหลดจริง (ถ้ามี)
-  // สำหรับ mock data, เราจะเก็บแค่ url ชั่วคราว
-  const [imagePreviews, setImagePreviews] = React.useState<{ url: string; id: string }[]>(
-    initialData?.imageUrls.map(url => ({ url, id: url })) || [] // ใช้ URL เดิมเป็น ID สำหรับรูปภาพที่มีอยู่แล้ว
-  );
-  const [reportDate, setReportDate] = React.useState<Dayjs | null>(initialData ? dayjs(initialData.reportDate) : dayjs());
-  const [status, setStatus] = React.useState<ServiceReport['status']>(initialData?.status || 'open');
-  const [projects, setProjects] = React.useState<Project[]>([]);
 
-  React.useEffect(() => {
-    const fetchProjects = async () => {
-      const data = await getProjects();
-      setProjects(data);
-    };
-    fetchProjects();
-  }, []);
+  interface ImagePreviewItem {
+    id: string;
+    url: string;
+    name: string;
+    file?: File;
+    isNew: boolean;
+  }
+
+  const [imagePreviews, setImagePreviews] = React.useState<ImagePreviewItem[]>(
+    initialData?.imagePaths.map(path => ({
+      id: path as string,
+      url: combineImageUrl(path as string),
+      name: (path as string).split('/').pop() || '',
+      isNew: false,
+    })) || []
+  );
+
+  const [reportDate, setReportDate] = React.useState<Dayjs | null>(initialData ? dayjs(initialData.reportDate) : dayjs());
+  const [status, setStatus] = React.useState<ServiceReport['status']>(initialData?.status || 'Open');
+
+  const [openFullImageModal, setOpenFullImageModal] = React.useState(false);
+  const [fullImageUrl, setFullImageUrl] = React.useState<string | null>(null);
+
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
 
-    // ใน Production: คุณจะต้องอัปโหลดไฟล์ที่อยู่ใน imagePreviews.file ไปยัง Server ก่อน
-    // และเก็บ URL ที่ได้จาก Server มาใส่ใน imageUrls แทน
-    // สำหรับ Mock Data: เราจะใช้ URL ที่สร้างจาก createObjectURL เป็น imageUrls ไปก่อน
-    const finalImageUrls = imagePreviews.map(preview => preview.url);
+    const newFilesToUpload = imagePreviews.filter(item => item.isNew).map(item => item.file!);
+    const existingImagePaths = imagePreviews.filter(item => !item.isNew).map(item => item.id);
 
-    const reportData = {
+    const reportData: Omit<ServiceReport, 'id'> | ServiceReport = {
       projectId,
-      reporter,
+      reportedBy,
       complain,
       causesOfFailure,
       actionTaken,
       channel,
-      imageUrls: finalImageUrls, // ใช้ URL ที่ได้จากการ preview หรือจาก server
+      imagePaths: [...existingImagePaths, ...newFilesToUpload],
       reportDate: reportDate ? reportDate.format('YYYY-MM-DD') : '',
       status,
     };
+
     onSubmit(initialData ? { ...initialData, ...reportData } : reportData);
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      const newPreviews: { url: string; id: string }[] = [];
+      const newPreviews: ImagePreviewItem[] = [];
       Array.from(files).forEach((file) => {
         const url = URL.createObjectURL(file);
-        newPreviews.push({ url, id: file.name + Date.now() }); // ใช้ชื่อไฟล์ + timestamp เป็น ID ชั่วคราว
+        newPreviews.push({
+          id: file.name + Date.now(),
+          url: url,
+          name: file.name,
+          file: file,
+          isNew: true,
+        });
       });
       setImagePreviews((prev) => [...prev, ...newPreviews]);
-      // Clear input field to allow re-uploading the same file if needed
       event.target.value = '';
     }
   };
 
   const handleDeleteImage = (idToDelete: string) => {
-    setImagePreviews((prev) => prev.filter((img) => img.id !== idToDelete));
+    setImagePreviews((prev) => {
+      const itemToDelete = prev.find(item => item.id === idToDelete);
+      if (itemToDelete && itemToDelete.url.startsWith('blob:')) {
+        URL.revokeObjectURL(itemToDelete.url);
+      }
+      return prev.filter((img) => img.id !== idToDelete);
+    });
   };
 
+  const handleOpenFullImageModal = (url: string) => {
+    setFullImageUrl(url);
+    setOpenFullImageModal(true);
+  };
+
+  const handleCloseFullImageModal = () => {
+    setOpenFullImageModal(false);
+    setFullImageUrl(null);
+  };
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -111,15 +169,30 @@ export default function ServiceReportForm({ initialData, onSubmit, onCancel }: S
             label="โปรเจกต์"
             onChange={(e) => setProjectId(e.target.value)}
             required
+            // renderValue for Project Select: displays project name with avatar
+            renderValue={(selectedProjectId) => {
+              const selectedProject = projects.find(p => p.id === selectedProjectId);
+              return selectedProject ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Avatar src={combineImageUrl(selectedProject.imageUrl)} alt={selectedProject.name} sx={{ width: 24, height: 24 }} />
+                  <ListItemText primary={selectedProject.name} />
+                </Box>
+              ) : (
+                ''
+              );
+            }}
           >
             {projects.map((project) => (
               <MenuItem key={project.id} value={project.id}>
-                {project.name}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Avatar src={combineImageUrl(project.imageUrl)} alt={project.name} sx={{ width: 24, height: 24 }} />
+                  <ListItemText primary={project.name} />
+                </Box>
               </MenuItem>
             ))}
           </Select>
         </FormControl>
-        <TextField id="reporter" label="ผู้แจ้ง" value={reporter} onChange={(e) => setReporter(e.target.value)} required />
+        <TextField id="reporter" label="ผู้แจ้ง" value={reportedBy} onChange={(e) => setReportedBy(e.target.value)} required />
         <TextField
           id="complain"
           label="Complain"
@@ -162,40 +235,55 @@ export default function ServiceReportForm({ initialData, onSubmit, onCancel }: S
             ))}
           </Select>
         </FormControl>
-        {/* === ส่วน Image Upload และ Preview ที่ปรับปรุง === */}
+
         <FormControl fullWidth sx={{ m: 1 }}>
-          <InputLabel htmlFor="image-upload-button" shrink={true}>
-            รูปภาพ (หลายภาพ)
-          </InputLabel>
           <Input
             id="image-upload-button"
             type="file"
             inputProps={{ multiple: true, accept: 'image/*' }}
             onChange={handleImageUpload}
-            sx={{ display: 'none' }} // ซ่อน input จริง
+            sx={{ display: 'none' }}
           />
-          <label htmlFor="image-upload-button">
-            <Button
-              variant="outlined"
-              component="span" // สำคัญ: ทำให้ Button behave เหมือน span เพื่อให้ label ทำงาน
-              startIcon={<AttachFileIcon />}
-            >
-              เลือกรูปภาพ
-            </Button>
-          </label>
+          <TextField
+            label="รูปภาพ (หลายภาพ)"
+            variant="outlined"
+            fullWidth
+            value={imagePreviews.map(p => p.name).join(', ') || ''}
+            InputProps={{
+              readOnly: true,
+              endAdornment: (
+                <InputAdornment position="end">
+                  <label htmlFor="image-upload-button">
+                    <Button
+                      variant="contained"
+                      component="span"
+                      startIcon={<AttachFileIcon />}
+                      sx={{ ml: 1 }}
+                    >
+                      เลือกไฟล์
+                    </Button>
+                  </label>
+                </InputAdornment>
+              ),
+            }}
+          />
           {imagePreviews.length > 0 && (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', mt: 2, border: '1px solid #ccc', p: 1, borderRadius: '4px' }}>
               {imagePreviews.map((preview) => (
-                <Box key={preview.id} sx={{ position: 'relative', mr: 1, mb: 1, border: '1px solid #eee', p: 0.5, borderRadius: '4px' }}>
+                <Box
+                  key={preview.id}
+                  sx={{ position: 'relative', mr: 1, mb: 1, border: '1px solid #eee', p: 0.5, borderRadius: '4px', cursor: 'pointer' }}
+                  onClick={() => handleOpenFullImageModal(preview.url)}
+                >
                   <img
                     src={preview.url}
                     alt="Preview"
-                    style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '4px' }}
+                    style={{ width: '120px', height: '120px', objectFit: 'cover', borderRadius: '4px' }}
                   />
                   <IconButton
                     aria-label="delete image"
                     size="small"
-                    onClick={() => handleDeleteImage(preview.id)}
+                    onClick={(e) => { e.stopPropagation(); handleDeleteImage(preview.id); }}
                     sx={{
                       position: 'absolute',
                       top: -10,
@@ -213,7 +301,6 @@ export default function ServiceReportForm({ initialData, onSubmit, onCancel }: S
             </Box>
           )}
         </FormControl>
-        {/* ================================================= */}
         <FormControl fullWidth sx={{ m: 1 }}>
           <DatePicker
             label="วันที่แจ้ง"
@@ -235,10 +322,13 @@ export default function ServiceReportForm({ initialData, onSubmit, onCancel }: S
             label="สถานะ"
             onChange={(e) => setStatus(e.target.value as ServiceReport['status'])}
             required
+            renderValue={(selectedStatus) => ( // Render the selected status as a Chip
+              <Chip label={selectedStatus} color={getStatusColor(selectedStatus as ServiceReport['status'])} size="small" />
+            )}
           >
             {statuses.map((st) => (
               <MenuItem key={st} value={st}>
-                {st}
+                <Chip label={st} color={getStatusColor(st as ServiceReport['status'])} size="small" /> {/* Render each MenuItem as a Chip */}
               </MenuItem>
             ))}
           </Select>
@@ -252,6 +342,23 @@ export default function ServiceReportForm({ initialData, onSubmit, onCancel }: S
           </Button>
         </Box>
       </Box>
+
+      <Dialog open={openFullImageModal} onClose={handleCloseFullImageModal} maxWidth="md" fullWidth>
+        <DialogContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 2 }}>
+          {fullImageUrl && (
+            <img
+              src={fullImageUrl}
+              alt="Full Preview"
+              style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }}
+            />
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseFullImageModal} color="primary">
+            ปิด
+          </Button>
+        </DialogActions>
+      </Dialog>
     </LocalizationProvider>
   );
 }

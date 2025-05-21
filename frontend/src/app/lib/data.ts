@@ -1,132 +1,259 @@
 // src/lib/data.ts
-import { Project, User } from '../types'; // เพิ่ม User เข้ามา
+import { Project, User, ServiceReport } from '../types';
+import { API_BASE_URL } from './utils';
 
-// --- Mock Data สำหรับ Projects (ของเดิม) ---
-let projects: Project[] = [
-  { id: 'proj-001', name: 'Website Portfolio', imageUrl: 'https://via.placeholder.com/150/FF0000/FFFFFF?text=Project1' },
-  { id: 'proj-002', name: 'Mobile App Design', imageUrl: 'https://via.placeholder.com/150/0000FF/FFFFFF?text=Project2' },
-  { id: 'proj-003', name: 'E-commerce Platform', imageUrl: 'https://via.placeholder.com/150/00FF00/FFFFFF?text=Project3' },
-];
+// --- เปลี่ยนไปใช้ API จริงสำหรับ Projects (ไม่มี Mock Data Fallback) ---
 
 export async function getProjects(): Promise<Project[]> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(projects);
-    }, 300);
-  });
+  const response = await fetch(`${API_BASE_URL}/api/Project`);
+  if (!response.ok) {
+    // โยน Error ตรงๆ ถ้า API มีปัญหา
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
 }
 
 export async function addProject(project: Omit<Project, 'id'>): Promise<Project> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const newProject: Project = {
-        id: `proj-${Date.now()}`,
-        ...project,
-      };
-      projects.push(newProject);
-      resolve(newProject);
-    }, 300);
+  const formData = new FormData();
+  formData.append('name', project.name);
+
+  if (project.imageFile) {
+    formData.append('Image', project.imageFile, project.imageFile.name);
+  } else if (project.imageUrl) {
+    // ถ้ามี imageUrl เดิม (กรณี update ที่ไม่ได้เปลี่ยนรูป)
+    formData.append('imageUrl', project.imageUrl); // ส่ง imageUrl ไปด้วย
+  }
+
+
+  const response = await fetch(`${API_BASE_URL}/api/Project`, {
+    method: 'POST',
+    body: formData,
   });
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
+  }
+  return await response.json();
 }
 
 export async function updateProject(updatedProject: Project): Promise<Project> {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const index = projects.findIndex((p) => p.id === updatedProject.id);
-      if (index !== -1) {
-        projects[index] = updatedProject;
-        resolve(updatedProject);
-      } else {
-        reject(new Error('Project not found'));
-      }
-    }, 300);
+  const formData = new FormData();
+  formData.append('id', updatedProject.id);
+  formData.append('name', updatedProject.name);
+
+  if (updatedProject.imageFile) {
+    formData.append('Image', updatedProject.imageFile, updatedProject.imageFile.name);
+  } else if (updatedProject.imageUrl) {
+    // ถ้าไม่มีไฟล์ใหม่ แต่มี imageUrl เดิม
+    formData.append('imageUrl', updatedProject.imageUrl); // ส่ง imageUrl ไปด้วย
+  } else {
+    // ถ้าไม่มีรูปภาพเลย (ถูกลบออกไป)
+    // คุณอาจจะต้องส่ง flag พิเศษไปบอก Backend ว่าให้ลบรูปภาพ
+    // หรือ Backend อาจจะถือว่าถ้า Image และ imageUrl ไม่ถูกส่งมาก็คือไม่มีรูป
+    // สำหรับตอนนี้เราจะส่ง imageUrl เป็น empty string ไป
+    formData.append('imageUrl', '');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/Project/${updatedProject.id}`, {
+    method: 'PUT',
+    body: formData,
   });
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
+  }
+  return updatedProject;
 }
 
 export async function deleteProject(id: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const initialLength = projects.length;
-      projects = projects.filter((p) => p.id !== id);
-      if (projects.length < initialLength) {
-        resolve();
-      } else {
-        reject(new Error('Project not found'));
-      }
-    }, 300);
+  const response = await fetch(`${API_BASE_URL}/api/Project/${id}`, {
+    method: 'DELETE',
   });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
 }
 
 export async function getProjectById(id: string): Promise<Project | undefined> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const project = projects.find((p) => p.id === id);
-      resolve(project);
-    }, 300);
-  });
+  const response = await fetch(`${API_BASE_URL}/api/Project/${id}`);
+  if (response.status === 404) {
+    return undefined;
+  }
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
 }
 
-// --- **เพิ่ม Mock Data สำหรับ Users (ใหม่)** ---
-let users: User[] = [
-  { id: 'user-001', name: 'Alice Smith', email: 'alice@example.com', role: 'admin' },
-  { id: 'user-002', name: 'Bob Johnson', email: 'bob@example.com', role: 'editor' },
-  { id: 'user-003', name: 'Charlie Brown', email: 'charlie@example.com', role: 'viewer' },
-];
+// --- เปลี่ยนไปใช้ API จริงสำหรับ Users (ไม่มี Mock Data Fallback) ---
 
 export async function getUsers(): Promise<User[]> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(users);
-    }, 300);
-  });
+  const response = await fetch(`${API_BASE_URL}/api/User`);
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
 }
 
 export async function addUser(user: Omit<User, 'id'>): Promise<User> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const newUser: User = {
-        id: `user-${Date.now()}`, // สร้าง ID ง่ายๆ
-        ...user,
-      };
-      users.push(newUser);
-      resolve(newUser);
-    }, 300);
+  const response = await fetch(`${API_BASE_URL}/api/User`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(user),
   });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
 }
 
 export async function updateUser(updatedUser: User): Promise<User> {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const index = users.findIndex((u) => u.id === updatedUser.id);
-      if (index !== -1) {
-        users[index] = updatedUser;
-        resolve(updatedUser);
-      } else {
-        reject(new Error('User not found'));
-      }
-    }, 300);
+  const response = await fetch(`${API_BASE_URL}/api/User/${updatedUser.id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(updatedUser),
   });
+  if (!response.ok) {
+    if (response.status === 204) {
+      return updatedUser;
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
 }
 
 export async function deleteUser(id: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const initialLength = users.length;
-      users = users.filter((u) => u.id !== id);
-      if (users.length < initialLength) {
-        resolve();
-      } else {
-        reject(new Error('User not found'));
-      }
-    }, 300);
+  const response = await fetch(`${API_BASE_URL}/api/User/${id}`, {
+    method: 'DELETE',
   });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
 }
 
 export async function getUserById(id: string): Promise<User | undefined> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const user = users.find((u) => u.id === id);
-      resolve(user);
-    }, 300);
+  const response = await fetch(`${API_BASE_URL}/api/User/${id}`);
+  if (response.status === 404) {
+    return undefined;
+  }
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
+}
+
+// --- เปลี่ยนไปใช้ API จริงสำหรับ Service Reports (ไม่มี Mock Data Fallback) ---
+
+export async function getServiceReports(): Promise<ServiceReport[]> {
+  const response = await fetch(`${API_BASE_URL}/api/ServiceReport`);
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
+}
+// --- IMPORTANT: Update addServiceReport for multipart/form-data with imagePaths ---
+export async function addServiceReport(report: Omit<ServiceReport, 'id'>): Promise<ServiceReport> {
+  const formData = new FormData();
+
+  // Append text fields from the report object
+  // Ensure these names match the properties in your ServiceReportDto in C#
+  formData.append('projectId', report.projectId);
+  formData.append('reportedBy', report.reportedBy);
+  formData.append('complain', report.complain);
+  formData.append('causesOfFailure', report.causesOfFailure);
+  formData.append('actionTaken', report.actionTaken);
+  formData.append('channel', report.channel);
+  formData.append('reportDate', report.reportDate);
+  formData.append('status', report.status);
+
+  // Append image files
+  report.imagePaths.forEach((item, index) => { // <--- เปลี่ยนจาก imageUrls เป็น imagePaths
+    if (item instanceof File) {
+      // 'images' must match the parameter name in your backend's CreateWithImages method (List<IFormFile>? images)
+      formData.append(`images`, item, item.name);
+    } else {
+      // ถ้าเป็น string (URL ที่มีอยู่แล้ว)
+      // สำหรับการเพิ่มใหม่, เราจะไม่ส่ง URL ที่มีอยู่แล้วผ่าน parameter 'images'
+      // ถ้า backend ต้องการ list ของ string (ImagePaths) แยกต่างหากสำหรับ existing URLs,
+      // คุณจะต้องเพิ่ม formData.append('imagePaths', item) หรือ formData.append('imagePaths[index]', item)
+      // แต่โดยทั่วไป Create endpoint จะรับแต่ไฟล์ใหม่
+    }
   });
+
+  // ใช้ endpoint เฉพาะสำหรับการอัปโหลดรูปภาพ
+  const response = await fetch(`${API_BASE_URL}/api/ServiceReport`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
+  }
+  return await response.json();
+}
+// --- IMPORTANT: Corrected updateServiceReport for multipart/form-data ---
+export async function updateServiceReport(updatedReport: ServiceReport): Promise<ServiceReport> {
+  const formData = new FormData();
+
+  // Append ServiceReportDto text fields with 'reportDto.' prefix
+  // These names must match the properties in your ServiceReportDto in C#
+  // Example: [FromForm] ServiceReportDto reportDto in backend
+  formData.append('reportDto.projectId', updatedReport.projectId);
+  formData.append('reportDto.reportedBy', updatedReport.reportedBy); // Frontend 'reporter' maps to backend 'ReportedBy'
+  formData.append('reportDto.complain', updatedReport.complain);
+  formData.append('reportDto.causesOfFailure', updatedReport.causesOfFailure);
+  formData.append('reportDto.actionTaken', updatedReport.actionTaken);
+  formData.append('reportDto.channel', updatedReport.channel);
+  formData.append('reportDto.reportDate', updatedReport.reportDate);
+  formData.append('reportDto.status', updatedReport.status);
+
+  // Separate new files from existing paths
+  const newFilesToUpload = updatedReport.imagePaths.filter(item => item instanceof File) as File[];
+  const existingImagePaths = updatedReport.imagePaths.filter(item => typeof item === 'string') as string[];
+
+  // Append new image files to the 'images' parameter
+  newFilesToUpload.forEach((file) => {
+    formData.append(`images`, file, file.name); // 'images' must match backend parameter `List<IFormFile>? images`
+  });
+
+  // Append existing image paths to the 'ImagePaths' property of the ServiceReportDto
+  // This is how you send a List<string> via FormData for a DTO property
+  existingImagePaths.forEach((path, index) => {
+    formData.append(`reportDto.imagePaths[${index}]`, path); // Matches ServiceReportDto.ImagePaths
+  });
+
+  // The PUT endpoint for ServiceReport should be /api/ServiceReport/{id}
+  // And the backend method signature is `UpdateWithImages(string id, [FromForm] ServiceReportDto reportDto, [FromForm] List<IFormFile>? images)`
+  const response = await fetch(`${API_BASE_URL}/api/ServiceReport/${updatedReport.id}`, {
+    method: 'PUT',
+    // Do NOT set 'Content-Type' header here; fetch will set it automatically for FormData
+    body: formData, // Send FormData directly
+  });
+
+  if (!response.ok) {
+    if (response.status === 204) {
+      return updatedReport;
+    }
+    const errorBody = await response.text();
+    throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
+  }
+  // If backend returns 204 No Content, return updatedReport
+  // If backend returns 200 OK with body, await response.json()
+  return updatedReport; // Assuming 204 No Content or similar
+}
+
+
+
+export async function deleteServiceReport(id: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/ServiceReport/${id}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
 }

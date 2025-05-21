@@ -39,9 +39,10 @@ namespace backend.Models
 
         [Required]
         [MaxLength(20)]
-        public string Status { get; set; } = "open";
+        public string Status { get; set; } = "Open";
 
         public string CreatedBy { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public string UpdatedBy { get; set; } = string.Empty;
 

@@ -7,6 +7,20 @@ builder.Services.AddSingleton<IServiceReportRepository, ServiceReportRepository>
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 
+
+// CORS Setup
+var MyAllowSpecificOrigins = "https://localhost:7001,*";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: MyAllowSpecificOrigins,
+                      builder =>
+                      {
+                          builder.AllowAnyOrigin()
+                                 .AllowAnyHeader()
+                                 .AllowAnyMethod();
+                      });
+});
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -29,6 +43,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // ✅ Middleware Setup
+app.UseCors(MyAllowSpecificOrigins);
 app.UseHttpsRedirection();
 app.UseStaticFiles();           // <-- Must be before MapControllers to serve wwwroot/*
 app.UseRouting();

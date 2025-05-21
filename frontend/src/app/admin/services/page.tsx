@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -11,15 +11,20 @@ import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import MuiAlert, { AlertProps } from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
-
-// --- เพิ่ม Import สำหรับ AddIcon ---
 import AddIcon from '@mui/icons-material/Add';
-// ----------------------------------
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs, { Dayjs } from 'dayjs';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+dayjs.extend(isSameOrBefore);
+dayjs.extend(isSameOrAfter);
 
 import ServiceReportTable from '../../components/service/ServiceReportTable';
 import ServiceReportForm from '../../components/service/ServiceReportForm';
-import { getServiceReports, addServiceReport, updateServiceReport, deleteServiceReport } from '../../lib/service-report-data';
-import { ServiceReport } from '../../types';
+import { getServiceReports, addServiceReport, updateServiceReport, deleteServiceReport, getProjects } from '../../lib/data';
+import { ServiceReport, Project } from '../../types';
 
 function Alert(props: AlertProps) {
   return <MuiAlert elevation={6} variant="filled" {...props} />;
@@ -27,6 +32,7 @@ function Alert(props: AlertProps) {
 
 export default function ServiceReportsPage() {
   const [reports, setReports] = useState<ServiceReport[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [openFormModal, setOpenFormModal] = useState(false);
   const [editingReport, setEditingReport] = useState<ServiceReport | undefined>(undefined);
@@ -34,14 +40,26 @@ export default function ServiceReportsPage() {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
 
-  const fetchReports = async () => {
+  // State for DatePicker values (what user selects in UI)
+  const [selectedStartDate, setSelectedStartDate] = useState<Dayjs | null>(dayjs());
+  const [selectedEndDate, setSelectedEndDate] = useState<Dayjs | null>(dayjs());
+
+  // State for actual filter dates (what the table filters by)
+  const [activeFilterStartDate, setActiveFilterStartDate] = useState<Dayjs | null>(dayjs());
+  const [activeFilterEndDate, setActiveFilterEndDate] = useState<Dayjs | null>(dayjs());
+
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const data = await getServiceReports();
-      setReports(data);
+      const [reportsData, projectsData] = await Promise.all([
+        getServiceReports(),
+        getProjects()
+      ]);
+      setReports(reportsData);
+      setProjects(projectsData);
     } catch (error) {
-      console.error('Failed to fetch service reports:', error);
-      setSnackbarMessage('Failed to load service reports.');
+      console.error('Failed to fetch data:', error);
+      setSnackbarMessage('Failed to load data.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
     } finally {
@@ -50,8 +68,18 @@ export default function ServiceReportsPage() {
   };
 
   useEffect(() => {
-    fetchReports();
+    fetchData();
   }, []);
+
+  // Filter reports based on active filter dates (triggered by Search button)
+  const filteredReports = useMemo(() => {
+    return reports.filter(report => {
+      const reportDate = dayjs(report.reportDate);
+      const isAfterStartDate = activeFilterStartDate ? reportDate.isSameOrAfter(activeFilterStartDate, 'day') : true;
+      const isBeforeEndDate = activeFilterEndDate ? reportDate.isSameOrBefore(activeFilterEndDate, 'day') : true;
+      return isAfterStartDate && isBeforeEndDate;
+    });
+  }, [reports, activeFilterStartDate, activeFilterEndDate]); // Dependencies changed
 
   const handleOpenAddForm = () => {
     setEditingReport(undefined);
@@ -75,7 +103,7 @@ export default function ServiceReportsPage() {
       setSnackbarSeverity('success');
       setSnackbarOpen(true);
       setOpenFormModal(false);
-      fetchReports();
+      fetchData(); // Re-fetch data after submission
     } catch (error) {
       console.error('Error saving service report:', error);
       setSnackbarMessage('Failed to save service report.');
@@ -91,7 +119,7 @@ export default function ServiceReportsPage() {
         setSnackbarMessage('Service Report deleted successfully!');
         setSnackbarSeverity('success');
         setSnackbarOpen(true);
-        fetchReports();
+        fetchData(); // Re-fetch data after deletion
       } catch (error) {
         console.error('Error deleting service report:', error);
         setSnackbarMessage('Failed to delete service report.');
@@ -113,49 +141,99 @@ export default function ServiceReportsPage() {
     setSnackbarOpen(false);
   };
 
+  // Handler for the Search button
+  const handleSearch = () => {
+    setActiveFilterStartDate(selectedStartDate);
+    setActiveFilterEndDate(selectedEndDate);
+  };
+
+  // Handler for the Clear Filter button
+  const handleClearFilter = () => {
+    setSelectedStartDate(null);
+    setSelectedEndDate(null);
+    setActiveFilterStartDate(null);
+    setActiveFilterEndDate(null);
+  };
+
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography variant="h4" component="h1">
-          Service Report Management
-        </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleOpenAddForm}
-          startIcon={<AddIcon />} 
-        >
-          Add Service Report
-        </Button>
-      </Box>
-
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <CircularProgress />
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+          <Typography variant="h4" component="h1">
+            Service Report Management
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleOpenAddForm}
+            startIcon={<AddIcon />}
+          >
+            Add Service Report
+          </Button>
         </Box>
-      ) : (
-        <ServiceReportTable
-          reports={reports}
-          onEdit={handleEditReport}
-          onDelete={handleDeleteReport}
-        />
-      )}
 
-      <Dialog open={openFormModal} onClose={handleCloseFormModal}>
-        <DialogContent>
-          <ServiceReportForm
-            initialData={editingReport}
-            onSubmit={handleFormSubmit}
-            onCancel={handleCloseFormModal}
+        {/* Date Filter Section */}
+        <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center' }}>
+          <Typography variant="subtitle1">Filter by Date:</Typography>
+          <DatePicker
+            label="Start Date"
+            value={selectedStartDate}
+            onChange={(newValue) => setSelectedStartDate(newValue)}
+            slotProps={{ textField: { size: 'small', sx: { width: '180px' } } }}
           />
-        </DialogContent>
-      </Dialog>
+          <DatePicker
+            label="End Date"
+            value={selectedEndDate}
+            onChange={(newValue) => setSelectedEndDate(newValue)}
+            slotProps={{ textField: { size: 'small', sx: { width: '180px' } } }}
+          />
+          <Button
+            variant="contained" // Changed to contained for search button
+            color="primary"
+            onClick={handleSearch} // Search button handler
+            sx={{ height: '40px' }}
+          >
+            Search
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={handleClearFilter} // Clear filter button handler
+            sx={{ height: '40px' }}
+          >
+            Clear Filter
+          </Button>
+        </Box>
 
-      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleSnackbarClose}>
-        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity}>
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
-    </Box>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <ServiceReportTable
+            reports={filteredReports}
+            projects={projects}
+            onEdit={handleEditReport}
+            onDelete={handleDeleteReport}
+          />
+        )}
+
+        <Dialog open={openFormModal} onClose={handleCloseFormModal}>
+          <DialogContent>
+            <ServiceReportForm
+              initialData={editingReport}
+              projects={projects}
+              onSubmit={handleFormSubmit}
+              onCancel={handleCloseFormModal}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleSnackbarClose}>
+          <Alert onClose={handleSnackbarClose} severity={snackbarSeverity}>
+            {snackbarMessage}
+          </Alert>
+        </Snackbar>
+      </Box>
+    </LocalizationProvider>
   );
 }
