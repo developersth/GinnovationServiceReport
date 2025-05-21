@@ -4,6 +4,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Register Repositories and Services
 builder.Services.AddSingleton<IServiceReportRepository, ServiceReportRepository>();
+builder.Services.AddSingleton<IUserRepository, UserRepository>();
 // builder.Services.AddSingleton<IServiceReportService, ServiceReportService>(); // ถ้ามี Service
 
 // Add Controllers and Swagger

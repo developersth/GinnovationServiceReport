@@ -12,3 +12,6 @@ docker compose down -d
 --add cert
 dotnet dev-certs https --trust
 dotnet dev-certs https -ep ./https/aspnetapp.pfx -p hoOkqJB9zu
+
+
+npm run dev
