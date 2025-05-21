@@ -1,23 +1,32 @@
 using System;
-using System.ComponentModel.DataAnnotations; // For data annotations if needed
+using System.ComponentModel.DataAnnotations;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
-namespace backend.Models // Changed namespace to backend.Models
+namespace backend.Models
 {
     /// <summary>
     /// Represents a User entity in the system.
-    /// (Based on previous frontend discussions, useful for a complete API)
     /// </summary>
     public class User
     {
-        [Key]
-        public string Id { get; set; } = Guid.NewGuid().ToString();
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string? Id { get; set; }
+
         [Required]
         [MaxLength(100)]
         public string Name { get; set; } = string.Empty;
+
         [Required]
-        [EmailAddress] // Optional: Data annotation for email format validation
+        [EmailAddress]
         public string Email { get; set; } = string.Empty;
+
         [Required]
         public string Role { get; set; } = "viewer"; // e.g., "admin", "editor", "viewer"
+
+        [Required]
+        [MinLength(6, ErrorMessage = "Password must be at least 6 characters long.")]
+        public string Password { get; set; } = string.Empty; // Store hashed password here
     }
 }
