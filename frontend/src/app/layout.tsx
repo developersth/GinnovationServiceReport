@@ -1,12 +1,13 @@
 // src/app/layout.tsx
 import './globals.css';
-import { Prompt } from 'next/font/google';
+import { Sarabun } from 'next/font/google'; // เปลี่ยนจาก Prompt เป็น Sarabun
 
-const prompt = Prompt({
-  weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
-  subsets: ['thai', 'latin'],
+// กำหนดค่าฟอนต์ Sarabun
+const sarabun = Sarabun({
+  weight: ['100', '200', '300', '400', '500', '600', '700', '800'], // กำหนดน้ำหนักที่ต้องการ
+  subsets: ['thai', 'latin'], // ระบุ subsets ที่จำเป็น
   display: 'swap',
-  variable: '--font-prompt',
+  variable: '--font-sarabun', // กำหนด CSS variable name
 });
 
 export default function RootLayout({
@@ -15,8 +16,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    // Remove any whitespace or newline characters between <html> and <body>
-    <html lang="th" className={`${prompt.variable}`}>
+    // ใช้ className ของฟอนต์ Sarabun
+    <html lang="th" className={`${sarabun.variable}`}>
       <body>{children}</body>
     </html>
   );

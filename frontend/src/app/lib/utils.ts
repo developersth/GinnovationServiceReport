@@ -2,7 +2,7 @@
 
 // API_BASE_URL จะถูกดึงมาจากตัวแปรสภาพแวดล้อม
 // NEXT_PUBLIC_ เป็น Prefix ที่จำเป็นสำหรับตัวแปรสภาพแวดล้อมที่ต้องการให้เข้าถึงได้ในฝั่ง Client-side ของ Next.js
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:7001'; // Fallback for development
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://localhost:7001'; // Fallback for development
 
 /**
  * รวม URL รูปภาพเข้ากับ Base URL ของ API
