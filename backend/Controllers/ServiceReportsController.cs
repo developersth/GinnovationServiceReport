@@ -67,7 +67,7 @@ public class ServiceReportController : ControllerBase
 
         if (images != null && images.Count > 0)
         {
-            var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
+            var uploadsFolder = Path.Combine(_env.WebRootPath, "images", "service-reports");
             if (!Directory.Exists(uploadsFolder))
                 Directory.CreateDirectory(uploadsFolder);
 
@@ -79,7 +79,7 @@ public class ServiceReportController : ControllerBase
                 using var stream = new FileStream(filePath, FileMode.Create);
                 await image.CopyToAsync(stream);
 
-                imageUrls.Add($"/uploads/{fileName}");
+                imageUrls.Add($"/images/service-reports/{fileName}");
             }
         }
 
@@ -119,43 +119,66 @@ public class ServiceReportController : ControllerBase
         if (existing == null)
             return NotFound();
 
-        var remainingPaths = reportDto.RemainingImagePaths ?? new List<string>();
+        var webRoot = _env.WebRootPath;
+        var uploadDir = Path.Combine(webRoot, "images", "service-reports");
+        Directory.CreateDirectory(uploadDir);
 
-        // 🔥 ลบเฉพาะรูปที่ไม่มีใน remainingPaths
-        var pathsToDelete = existing.ImagePaths?.Where(p => !remainingPaths.Contains(p)).ToList();
-        if (pathsToDelete != null)
+        var newImagePaths = new List<string>();
+
+        // ✅ ถ้ามีภาพใหม่ -> ลบภาพเดิมทั้งหมดก่อน แล้วแทนที่
+        if (images is { Count: > 0 })
         {
-            foreach (var path in pathsToDelete)
+            // 🔥 ลบภาพเดิมทั้งหมด
+            if (existing.ImagePaths != null)
             {
-                var fileName = Path.GetFileName(path);
-                var fullPath = Path.Combine(_env.WebRootPath, "uploads", fileName);
-                if (System.IO.File.Exists(fullPath))
+                foreach (var path in existing.ImagePaths)
                 {
-                    System.IO.File.Delete(fullPath);
+                    var fileName = Path.GetFileName(path);
+                    var fullPath = Path.Combine(uploadDir, fileName);
+                    if (System.IO.File.Exists(fullPath))
+                    {
+                        try
+                        {
+                            System.IO.File.Delete(fullPath);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"❌ Failed to delete file: {fullPath} - {ex.Message}");
+                        }
+                    }
+                }
+            }
+
+            // 📥 อัปโหลดภาพใหม่
+            foreach (var image in images)
+            {
+                if (image.Length > 0)
+                {
+                    var ext = Path.GetExtension(image.FileName);
+                    var fileName = $"{Guid.NewGuid()}{ext}";
+                    var filePath = Path.Combine(uploadDir, fileName);
+
+                    try
+                    {
+                        await using var stream = new FileStream(filePath, FileMode.Create);
+                        await image.CopyToAsync(stream);
+                        newImagePaths.Add($"/images/service-reports/{fileName}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"❌ Failed to save image: {filePath} - {ex.Message}");
+                        return StatusCode(500, "Image upload failed.");
+                    }
                 }
             }
         }
-
-        // 📥 อัปโหลดรูปใหม่
-        var imageUrls = new List<string>(remainingPaths); // เริ่มจากรูปเดิมที่เหลือ
-        if (images != null && images.Count > 0)
+        else
         {
-            var uploadDir = Path.Combine(_env.WebRootPath, "uploads");
-            Directory.CreateDirectory(uploadDir);
-
-            foreach (var image in images)
-            {
-                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
-                var filePath = Path.Combine(uploadDir, fileName);
-
-                using var stream = new FileStream(filePath, FileMode.Create);
-                await image.CopyToAsync(stream);
-
-                imageUrls.Add($"/uploads/{fileName}"); // เก็บ relative path
-            }
+            // ❗ ไม่มีภาพใหม่แนบมา → ใช้ภาพเดิม
+            newImagePaths = existing.ImagePaths ?? new List<string>();
         }
 
-        // ✏️ อัปเดตข้อมูล ServiceReport
+        // ✏️ อัปเดตข้อมูล
         existing.ProjectId = reportDto.ProjectId;
         existing.ReportedBy = reportDto.ReportedBy;
         existing.Complain = reportDto.Complain;
@@ -167,34 +190,52 @@ public class ServiceReportController : ControllerBase
         existing.Status = reportDto.Status;
         existing.CreatedBy = reportDto.CreatedBy;
         existing.UpdatedBy = reportDto.UpdatedBy;
-        existing.ImagePaths = imageUrls;
+        existing.ImagePaths = newImagePaths;
         existing.UpdatedAt = DateTime.UtcNow;
 
         await _repository.UpdateAsync(id, existing);
+
         return NoContent();
     }
 
 
-    [HttpDelete("{id:length(24)}")]
-    public async Task<ActionResult> Delete(string id)
-    {
-        var existing = await _repository.GetByIdAsync(id);
-        if (existing == null)
-            return NotFound();
 
-        // ลบไฟล์ภาพที่เกี่ยวข้องทั้งหมด
+[HttpDelete("{id:length(24)}")]
+public async Task<ActionResult> Delete(string id)
+{
+    var existing = await _repository.GetByIdAsync(id);
+    if (existing == null)
+        return NotFound();
+
+    // ลบไฟล์ภาพทั้งหมดที่เกี่ยวข้อง
+    if (existing.ImagePaths != null)
+    {
         foreach (var imagePath in existing.ImagePaths)
         {
-            var fullImagePath = Path.Combine("wwwroot/uploads", imagePath); // ปรับ path ให้ตรงกับที่คุณบันทึก
-            if (System.IO.File.Exists(fullImagePath))
+            // ตัด / ออกแล้วต่อ path ให้ถูกต้อง
+            var fileName = Path.GetFileName(imagePath);
+            var fullPath = Path.Combine(_env.WebRootPath, "images", "service-reports", fileName);
+
+            if (System.IO.File.Exists(fullPath))
             {
-                System.IO.File.Delete(fullImagePath);
+                try
+                {
+                    System.IO.File.Delete(fullPath);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ Failed to delete image: {fullPath} - {ex.Message}");
+                    // หากต้องการ: return StatusCode(500, "Failed to delete image.");
+                }
             }
         }
-
-        // ลบข้อมูลในฐานข้อมูล
-        await _repository.DeleteAsync(id);
-        return NoContent();
     }
+
+    // ลบข้อมูลจากฐานข้อมูล
+    await _repository.DeleteAsync(id);
+
+    return NoContent();
+}
+
 
 }
