@@ -24,5 +24,9 @@ export interface ServiceReport {
   channel: string; // ช่องทางการแจ้ง (เช่น โทรศัพท์, อีเมล, Line)
   imagePaths: (string | File)[]; // <--- เปลี่ยนจาก imageUrls เป็น imagePaths และรองรับ File object
   reportDate: string; // วันที่แจ้ง (ISO 8601 format: YYYY-MM-DD)
+  createdBy: string; 
+  createdAt: string; 
+  updatedBy: string; 
+  updatedAt: string; 
   status: 'Open' | 'In Progress' | 'Resolved'| 'Complete' | 'Closed'; // สถานะ
 }

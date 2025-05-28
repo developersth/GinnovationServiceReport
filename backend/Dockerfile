@@ -5,9 +5,9 @@ EXPOSE 5000
 ENV ASPNETCORE_URLS=http://+:5000
 
 # Create folders and set permissions
-RUN mkdir -p wwwroot/uploads/projects wwwroot/images && \
-    chmod -R 775 wwwroot/uploads/projects wwwroot/images && \
-    chown -R app:app wwwroot/uploads/projects wwwroot/images || true
+# RUN mkdir -p wwwroot/uploads/projects wwwroot/images && \
+#     chmod -R 775 wwwroot/uploads/projects wwwroot/images && \
+#     chown -R app:app wwwroot/uploads/projects wwwroot/images || true
     
 USER app
 

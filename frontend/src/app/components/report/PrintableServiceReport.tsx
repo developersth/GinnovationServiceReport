@@ -1,127 +1,179 @@
 // src/components/report/PrintableServiceReport.tsx
 import React from 'react';
-import { Box, Typography, Divider, List, ListItem, ListItemText, ImageList, ImageListItem } from '@mui/material';
-import Grid from '@mui/material/Grid'; 
+import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Divider, Checkbox, FormControlLabel, Grid } from '@mui/material';
 import { ServiceReport, Project } from '../../types';
 import { combineImageUrl, formatDate } from '../../lib/utils';
 
 interface PrintableServiceReportProps {
-  report: ServiceReport;
+  reports: ServiceReport[];
   project?: Project;
 }
 
-const PrintableServiceReport: React.FC<PrintableServiceReportProps> = ({ report, project }) => {
-  if (!report) {
+const PrintableServiceReport: React.FC<PrintableServiceReportProps> = ({ reports, project }) => {
+  if (!reports || reports.length === 0) {
     return <Typography>No service report data available for printing.</Typography>;
   }
 
-  const currentProject = project;
+  const customerName = project?.name || "N/A";
+  const customerAddress = "42/1 หมู่ที่ 1 ถนนสุขุมวิท ตำบลทุ่งสุขลา อำเภอศรีราชา จังหวัดชลบุรี 20230";
+  const contactPerson = "K.Rachapon Rueanpingwang";
+  const contactTel = "085-0374-568";
+  const serviceUnder = "Contract";
+
+  const serviceStaff = [
+    { name: "", date: "", start: "", end: "", workingHours: "", travellingHours: "", charging: "Non Charge" },
+  ];
 
   return (
-    // This Box serves as the container for the printable content
-    // It's designed to be clean and minimal for PDF output
-    <Box sx={{ p: 4, bgcolor: 'background.paper', color: 'text.primary' }}>
-      {/* Header Section: Project Info, Report Date, Reporter */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {currentProject?.imageUrl && (
-            <img
-              src={combineImageUrl(currentProject.imageUrl)}
-              alt={currentProject.name}
-              style={{ width: 80, height: 80, objectFit: 'contain', borderRadius: '8px' }}
-            />
-          )}
-          <Box>
-            <Typography variant="h5" component="h1" sx={{ fontWeight: 'bold' }}>
-              {currentProject ? `Project: ${currentProject.name}` : 'Project Not Found'}
-            </Typography>
-            <Typography variant="subtitle1" color="text.secondary">
-              Service Report Details
-            </Typography>
-          </Box>
-        </Box>
-        <Box sx={{ textAlign: 'right' }}>
-          <Typography variant="body1">
-            **Report Date:** {formatDate(report.reportDate)}
-          </Typography>
-          <Typography variant="body1">
-            **Reporter:** {report.reportedBy}
+    <Box sx={{
+      p: 4,
+      maxWidth: '794px', // A4 width
+      margin: '0 auto',
+      bgcolor: 'background.paper',
+      color: 'text.primary',
+      fontFamily: 'Sarabun, sans-serif',
+      fontSize: '10pt',
+      lineHeight: 1.5,
+    }}>
+      {/* Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <img
+            src='/images/g-logo.png' // Direct local image path
+            alt="G Innovation Logo"
+            style={{ width: 120, height: 60, objectFit: 'contain' }}
+          />
+          <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '12pt' }}>
+            G Innovation Co.,Ltd.
           </Typography>
         </Box>
+        <Typography variant="h5" sx={{ fontWeight: 'bold', fontSize: '13pt' }}>
+          Service Report
+        </Typography>
       </Box>
 
-      <Divider sx={{ my: 3 }} />
+      {/* Customer Info */}
+      <TableContainer component={Box} sx={{ mb: 3, border: '1px solid #ccc' }}>
+        <Table size="small" sx={{ '& td, & th': { border: '1px solid #ccc', p: 0.5 } }}>
+          <TableBody>
+            {[
+              ['Customer', customerName],
+              ['Address', customerAddress],
+              ['Contact Person', contactPerson],
+              ['Contact Tel', contactTel],
+              ['Service under', serviceUnder],
+            ].map(([label, value]) => (
+              <TableRow key={label}>
+                <TableCell sx={{ width: '20%', fontWeight: 'bold' }}>{label}</TableCell>
+                <TableCell sx={{ width: '80%', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{value}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
-      {/* Detail Section: Complain, CausesOfFailure, ActionTaken, Channel */}
-      <Grid container spacing={2}> {/* Reduced spacing for print */}
-        <Grid item xs={12}>
-          <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
-            Problem Details
-          </Typography>
-          <List dense sx={{ '& .MuiListItemText-primary': { fontWeight: 'bold' } }}>
-            <ListItem disablePadding>
-              <ListItemText
-                primary="Complain:"
-                secondary={report.complain}
-              />
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemText
-                primary="Causes of Failure:"
-                secondary={report.causesOfFailure}
-              />
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemText
-                primary="Action Taken:"
-                secondary={report.actionTaken}
-              />
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemText
-                primary="Channel:"
-                secondary={report.channel}
-              />
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemText
-                primary="Status:"
-                secondary={report.status}
-              />
-            </ListItem>
-          </List>
+      {/* Main Report */}
+      <TableContainer component={Box} sx={{ mb: 3, border: '1px solid #ccc' }}>
+        <Table size="small" sx={{ '& td, & th': { border: '1px solid #ccc', p: 0.5, verticalAlign: 'top' } }}>
+          <TableHead>
+            <TableRow sx={{ bgcolor: '#f0f0f0' }}>
+              <TableCell sx={{ fontWeight: 'bold', width: '10%', whiteSpace: 'nowrap' }}>วันที่</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', width: '30%' }}>รายละเอียดที่แจ้ง</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', width: '30%' }}>สาเหตุของปัญหา</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', width: '30%' }}>การแก้ไข/ดำเนินการ</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {reports.map((reportItem) => (
+              <TableRow key={reportItem.id}>
+                <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDate(reportItem.reportDate)}</TableCell>
+                <TableCell sx={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{reportItem.complain}</TableCell>
+                <TableCell sx={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{reportItem.causesOfFailure}</TableCell>
+                <TableCell sx={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{reportItem.actionTaken}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Status and Signature */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={4}>
+          <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 1 }}>Status of work</Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+            <FormControlLabel control={<Checkbox size="small" />} label="Completed" checked sx={{ '& .MuiFormControlLabel-label': { fontSize: '10pt' } }} />
+            <FormControlLabel control={<Checkbox size="small" />} label="Follow-up" sx={{ '& .MuiFormControlLabel-label': { fontSize: '10pt' } }} />
+          </Box>
+        </Grid>
+        <Grid item xs={8}>
+          <TableContainer component={Box} sx={{ border: '1px solid #ccc' }}>
+            <Table size="small" sx={{ '& td, & th': { border: '1px solid #ccc', p: 0.5 } }}>
+              <TableBody>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 'bold', width: '30%' }}>Report by</TableCell>
+                  <TableCell sx={{ width: '70%', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>Kritsade Satewin</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Date</TableCell>
+                  <TableCell>{formatDate(new Date().toISOString().split('T')[0])}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Remark</TableCell>
+                  <TableCell sx={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}></TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Customer sign</TableCell>
+                  <TableCell></TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Grid>
       </Grid>
 
-      <Divider sx={{ my: 3 }} />
-
-      {/* Images Section */}
-      <Box>
-        <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
-          Attached Images
-        </Typography>
-        {report.imagePaths && report.imagePaths.length > 0 ? (
-          <ImageList sx={{ width: '100%', height: 'auto', mt: 2 }} cols={3} rowHeight={164}>
-            {report.imagePaths.map((item, index) => (
-              typeof item === 'string' && (
-                <ImageListItem key={index}>
-                  <img
-                    srcSet={`${combineImageUrl(item)}?w=164&h=164&fit=crop&auto=format 1x,
-                             ${combineImageUrl(item)}?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
-                    src={`${combineImageUrl(item)}?w=164&h=164&fit=crop&auto=format`}
-                    alt={`Service Report Image ${index + 1}`}
-                    loading="lazy"
-                    style={{ borderRadius: '4px' }}
-                  />
-                </ImageListItem>
-              )
+      {/* Staff Time */}
+      <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 1 }}>Service staff and working time</Typography>
+      <TableContainer component={Box} sx={{ mb: 3, border: '1px solid #ccc' }}>
+        <Table size="small" sx={{ '& td, & th': { border: '1px solid #ccc', p: 0.5, verticalAlign: 'top' } }}>
+          <TableHead>
+            <TableRow sx={{ bgcolor: '#f0f0f0' }}>
+              <TableCell sx={{ fontWeight: 'bold' }}>Engineer name</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>Date</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>Start</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>End</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Working hours</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Travelling hours</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Charging</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {serviceStaff.map((staff, index) => (
+              <TableRow key={index}>
+                <TableCell sx={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{staff.name}</TableCell>
+                <TableCell>{staff.date}</TableCell>
+                <TableCell>{staff.start}</TableCell>
+                <TableCell>{staff.end}</TableCell>
+                <TableCell>{staff.workingHours}</TableCell>
+                <TableCell>{staff.travellingHours}</TableCell>
+                <TableCell>{staff.charging}</TableCell>
+              </TableRow>
             ))}
-          </ImageList>
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            No images attached.
-          </Typography>
-        )}
+            <TableRow>
+              <TableCell colSpan={6} align="right" sx={{ fontWeight: 'bold' }}>Approved by :</TableCell>
+              <TableCell></TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Footer */}
+      <Box sx={{ textAlign: 'center', mt: 4, fontSize: '8pt', color: 'text.secondary' }}>
+        <Typography variant="body2" sx={{ fontSize: 'inherit' }}>
+          G INNOVATION CO.,LTD. 238/5 Ratchadapisek Rd., kwang Huai khwang, Khet Huai khwang, Bangkok 10320
+        </Typography>
+        <Typography variant="body2" sx={{ fontSize: 'inherit' }}>
+          Tel : 02-553-3138-40 Fax : 02-553-1027 www.ginnovation.co.th
+        </Typography>
       </Box>
     </Box>
   );

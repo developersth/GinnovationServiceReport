@@ -26,7 +26,7 @@ export function combineImageUrl(relativePath: string): string {
  * @param dateString วันที่ในรูปแบบ ISO 8601 (YYYY-MM-DD)
  * @returns วันที่ในรูปแบบ DD/MM/YYYY หรือสตริงว่างเปล่า
  */
-export function formatDate(dateString: string): string {
+export function formatDateBackup(dateString: string): string {
   if (!dateString) return '';
   try {
     const date = new Date(dateString);
@@ -42,3 +42,12 @@ export function formatDate(dateString: string): string {
     return dateString; // Return original string if formatting fails
   }
 }
+
+export const formatDate = (dateString: string) => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // เดือนเริ่มจาก 0
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};

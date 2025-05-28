@@ -1,153 +1,148 @@
-// src/app/admin/reports/service-report/[id]/page.tsx
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
-import { Box, Typography, CircularProgress, Button } from '@mui/material';
-import PrintIcon from '@mui/icons-material/Print';
-import ServiceReportDetail from '../../../../components/report/ServiceReportDetail';
-import PrintableServiceReport from '../../../../components/report/PrintableServiceReport';
-import { getServiceReportById, getProjectById } // Make sure getProjectById is imported
-from '../../../../lib/data';
-import { ServiceReport, Project } from '../../../../types';
+import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { getServiceReportById, getProjects } from '../../../../lib/data';
+import { ServiceReport, Project } from '../../../../types'; // ตรวจสอบว่า 'ServiceReport' ใน types.ts ตรงกับโครงสร้าง API ใหม่
 
-// Import PDF generation libraries
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+// กำหนด Type ของ ServiceReport ให้ตรงกับ API ใหม่
+// คุณอาจจะต้องย้ายส่วนนี้ไปที่ไฟล์ types.ts ของคุณ
 
-interface ServiceReportPageProps {
-  params: {
-    id: string; // The ID of the service report from the URL
-  };
-}
+export default function SingleReportPage() {
+    const params = useParams();
+    const idParam = params?.id;
+    const id = Array.isArray(idParam) ? idParam[0] : idParam;
+    const [report, setReport] = useState<ServiceReport | null>(null); // เปลี่ยนเป็น APIServiceReport
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-export default function ServiceReportPage({ params }: ServiceReportPageProps) {
-  const { id } = params;
-  const [report, setReport] = useState<ServiceReport | null>(null);
-  const [project, setProject] = useState<Project | null>(null); // Initial state is null
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Ref to the component that needs to be printed (PrintableServiceReport)
-  const reportRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const reportData = await getServiceReportById(id);
-        if (reportData) {
-          setReport(reportData);
-          if (reportData.projectId) {
-            const projectData = await getProjectById(reportData.projectId);
-            // --- FIX START ---
-            setProject(projectData || null); // Convert undefined to null
-            // --- FIX END ---
-          } else {
-            setProject(null); // Explicitly set to null if no projectId
-          }
-        } else {
-          setError('Service Report not found.');
-          setReport(null); // Ensure report state is null if not found
-          setProject(null); // Ensure project state is null if report not found
+    useEffect(() => {
+        if (!id || typeof id !== 'string') {
+            setError('Invalid report ID');
+            setLoading(false);
+            return;
         }
-      } catch (err) {
-        console.error('Failed to fetch service report:', err);
-        setError('Failed to load service report details.');
-        setReport(null);
-        setProject(null);
-      } finally {
-        setLoading(false);
-      }
+
+        const fetchData = async () => {
+            try {
+                // ดึงข้อมูลรายงาน
+                // สมมติว่า getServiceReportById คืนค่า APIServiceReport
+                const reportData = await getServiceReportById(id);
+                if (!reportData) {
+                    throw new Error('Report not found');
+                }
+                setReport(reportData);
+
+                // ดึงข้อมูลโปรเจกต์
+                const projectsData = await getProjects();
+                setProjects(projectsData);
+
+            } catch (err) {
+                console.error('Fetch error:', err);
+                setError(err instanceof Error ? err.message : 'Failed to load data');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [id]);
+
+    if (loading) return <div className="p-4">Loading report...</div>;
+    if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
+    if (!report) return <div className="p-4">No report data found</div>;
+
+    const formatDate = (dateString: string) => {
+        if (!dateString) return 'N/A'; // เพิ่มการจัดการถ้า dateString เป็นค่าว่าง
+        return new Date(dateString).toLocaleString('th-TH');
     };
 
-    if (id) {
-      fetchData();
-    }
-  }, [id]);
+    // ค้นหาชื่อโปรเจกต์จากอาร์เรย์ projects
+    const projectName = projects.find(p => p.id === report.projectId)?.name || report.projectId || 'N/A';
 
-  /**
-   * Handles the generation and download of the Service Report as a PDF.
-   */
-  const handlePrintPdf = async () => {
-    if (reportRef.current) {
-      const canvas = await html2canvas(reportRef.current, {
-        scale: 2, // Increase scale for better resolution
-        useCORS: true, // Required if images are from a different origin
-        logging: true, // Enable logging for debugging
-        backgroundColor: '#ffffff', // Explicitly set background color to white for printing
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4'); // 'p' for portrait, 'mm' for millimeters, 'a4' size
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
-      pdf.save(`Service_Report_${report?.id || 'detail'}.pdf`);
-    } else {
-      console.error("Report reference is null. Cannot generate PDF.");
-    }
-  };
-
-  if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-        <CircularProgress />
-        <Typography variant="h6" sx={{ ml: 2 }}>Loading Report...</Typography>
-      </Box>
+        <div className="p-4 max-w-4xl mx-auto">
+            <h1 className="text-2xl font-bold mb-6">Service Report #{report.id.slice(-6)}</h1>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white p-4 rounded-lg shadow">
+                    <h2 className="text-lg font-semibold mb-4 border-b pb-2">Basic Information</h2>
+                    <div className="space-y-3">
+                        <div>
+                            <p className="text-sm text-gray-500">Project</p>
+                            <p>{projectName}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-500">Reported By</p>
+                            <p>{report.reportedBy || 'N/A'}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-500">Channel</p>
+                            <p>{report.channel || 'N/A'}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-500">Report Date</p>
+                            <p>{formatDate(report.reportDate)}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-500">Status</p>
+                            <p>{report.status || 'N/A'}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-500">Created At</p>
+                            <p>{formatDate(report.createdAt)}</p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-lg shadow">
+                    <h2 className="text-lg font-semibold mb-4 border-b pb-2">Problem Details</h2>
+                    <div className="space-y-3">
+                        {report.causesOfFailure && (
+                            <div>
+                                <p className="text-sm text-gray-500">Report By</p>
+                                <p>{report.reportedBy}</p>
+                            </div>
+                        )}
+                        <div>
+                            <p className="text-sm text-gray-500">Complain</p>
+                            <p>{report.complain || 'N/A'}</p>
+                        </div>
+
+                        {report.causesOfFailure && (
+                            <div>
+                                <p className="text-sm text-gray-500">Causes of Failure</p>
+                                <p>{report.causesOfFailure}</p>
+                            </div>
+                        )}
+                        {report.actionTaken && (
+                            <div>
+                                <p className="text-sm text-gray-500">Action Taken</p>
+                                <p>{report.actionTaken}</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {report.imagePaths && report.imagePaths.length > 0 && (
+                <div className="bg-white p-4 rounded-lg shadow mt-6">
+                    <h2 className="text-lg font-semibold mb-4 border-b pb-2">Images</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        {report.imagePaths.map((path, index) => (
+                            <div key={index} className="flex justify-center items-center overflow-hidden rounded-lg border">
+                                <img
+                                    src={path}
+                                    alt={`Report Image ${index + 1}`}
+                                    className="w-full h-auto object-cover" // ใช้ object-cover เพื่อให้รูปภาพเต็มพื้นที่และรักษาสัดส่วน
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
     );
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
-        <Typography color="error" variant="h6">{error}</Typography>
-      </Box>
-    );
-  }
-
-  if (!report) {
-    return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
-        <Typography variant="h6">Service Report not found.</Typography>
-      </Box>
-    );
-  }
-
-  return (
-    <Box sx={{ p: 3 }}>
-      {/* Print Button */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<PrintIcon />}
-          onClick={handlePrintPdf}
-        >
-          พิมพ์รายงาน PDF
-        </Button>
-      </Box>
-
-      {/* On-screen display of the report */}
-      <ServiceReportDetail report={report} project={project || undefined} />
-
-      {/* Hidden component for PDF generation */}
-      {/* This div will be rendered but hidden, and html2canvas will capture its content */}
-      <div ref={reportRef} style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
-        <PrintableServiceReport report={report} project={project || undefined} />
-      </div>
-    </Box>
-  );
 }

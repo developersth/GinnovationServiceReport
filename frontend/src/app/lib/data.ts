@@ -161,7 +161,6 @@ export async function addServiceReport(report: Omit<ServiceReport, 'id'>): Promi
   const formData = new FormData();
 
   // Append text fields with 'reportDto.' prefix to match backend's [FromForm] ServiceReportDto
-  // These names must match the properties in your ServiceReportDto in C#
   formData.append('reportDto.projectId', report.projectId);
   formData.append('reportDto.reportedBy', report.reportedBy);
   formData.append('reportDto.complain', report.complain);
@@ -174,15 +173,14 @@ export async function addServiceReport(report: Omit<ServiceReport, 'id'>): Promi
   // Append image files
   report.imagePaths.forEach((item) => {
     if (item instanceof File) {
-      // 'images' must match the parameter name in your backend's CreateWithImages method (List<IFormFile>? images)
-      formData.append(`images`, item, item.name);
+      formData.append(`images`, item, item.name); // 'images' must match the backend parameter `List<IFormFile>? images`
     }
-    // Existing image paths (strings) are not sent during 'add', only 'update'
   });
 
-  // Use the correct endpoint for adding service reports with images
-  // Assuming backend endpoint is /api/ServiceReport/CreateWithImages
-  const response = await fetch(`${API_BASE_URL}/api/ServiceReport/CreateWithImages`, {
+  // --- FIX START ---
+  // Change the endpoint to match your backend's CreateWithImages action
+  const response = await fetch(`${API_BASE_URL}/api/ServiceReport`, {
+  // --- FIX END ---
     method: 'POST',
     body: formData,
   });

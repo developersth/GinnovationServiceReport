@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter } from 'next/navigation'; // Import useRouter
+import { useRouter } from 'next/navigation';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -13,136 +13,163 @@ import Paper from '@mui/material/Paper';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import EditIcon from '@mui/icons-material/Edit';
-import VisibilityIcon from '@mui/icons-material/Visibility'; // Import Visibility icon for "ดูรายงาน" button
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
-import Chip from '@mui/material/Chip'; // Import Chip component
-// Removed Box and Typography imports as they are no longer needed for combined cell
+import Chip from '@mui/material/Chip';
+import Checkbox from '@mui/material/Checkbox';
 
+// ตรวจสอบให้แน่ใจว่า ServiceReport ใน types.ts ของคุณมีฟิลด์ครบถ้วนตาม API
 import { ServiceReport, Project } from '../../types';
-import { formatDate, combineImageUrl } from '../../lib/utils';
+import { combineImageUrl } from '../../lib/utils';
 
 interface ServiceReportTableProps {
   reports: ServiceReport[];
   projects: Project[];
   onEdit: (report: ServiceReport) => void;
   onDelete: (id: string) => void;
+  selectedReportIds: string[];
+  onSelectReport: (reportId: string, isSelected: boolean) => void;
+  onSelectAllReports: (isSelected: boolean) => void;
 }
 
-/**
- * Determines the Material-UI Chip color based on the service report status.
- * @param status The status of the service report.
- * @returns A Material-UI color variant string.
- */
+const formatDate = (dateString: string) => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
 const getStatusColor = (status: ServiceReport['status']): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
   switch (status) {
     case 'Open':
-      return 'error'; // Red for open issues
+      return 'error';
     case 'In Progress':
-      return 'info'; // Blue for in progress
+      return 'info';
     case 'Resolved':
-      return 'success'; // Green for resolved
+      return 'success';
     case 'Complete':
-      return 'primary'; // Primary color for completed tasks
+      return 'primary';
     case 'Closed':
-      return 'default'; // Grey for closed tasks
+      return 'default';
     default:
-      return 'default'; // Fallback to default
+      return 'default';
   }
 };
 
-export default function ServiceReportTable({ reports, projects, onEdit, onDelete }: ServiceReportTableProps) {
-  const router = useRouter(); // Initialize useRouter for navigation
-  // Safeguard to ensure projects and reports are arrays before use
+export default function ServiceReportTable({ reports, projects, onEdit, onDelete, selectedReportIds, onSelectReport, onSelectAllReports }: ServiceReportTableProps) {
+  const router = useRouter();
   const safeProjects = projects || [];
   const safeReports = reports || [];
 
-  // State for controlling the full image preview modal
   const [openFullImageModal, setOpenFullImageModal] = React.useState(false);
   const [fullImageUrl, setFullImageUrl] = React.useState<string | null>(null);
 
-  /**
-   * Opens the full image preview modal with the specified image URL.
-   * @param url The URL of the image to display.
-   */
+  const isAllSelected = safeReports.length > 0 && selectedReportIds.length === safeReports.length;
+  const isIndeterminate = selectedReportIds.length > 0 && selectedReportIds.length < safeReports.length;
+
   const handleOpenFullImageModal = (url: string) => {
     setFullImageUrl(url);
     setOpenFullImageModal(true);
   };
 
-  /**
-   * Closes the full image preview modal.
-   */
   const handleCloseFullImageModal = () => {
     setOpenFullImageModal(false);
     setFullImageUrl(null);
   };
 
-  /**
-   * Navigates to the detailed service report page.
-   * @param reportId The ID of the service report to view.
-   */
   const handleViewReport = (reportId: string) => {
     router.push(`/admin/reports/service-report/${reportId}`);
   };
 
+  const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onSelectAllReports(event.target.checked);
+  };
+
   return (
-    // Make the TableContainer responsive by allowing horizontal scrolling
     <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
       <Table sx={{ minWidth: 650 }} aria-label="service report table">
         <TableHead>
           <TableRow>
+            <TableCell padding="checkbox">
+              <Checkbox
+                color="primary"
+                indeterminate={isIndeterminate}
+                checked={isAllSelected}
+                onChange={handleSelectAllClick}
+                inputProps={{ 'aria-label': 'select all reports' }}
+              />
+            </TableCell>
+            <TableCell>ลำดับ</TableCell>
             <TableCell>รหัส</TableCell>
             <TableCell>โปรเจกต์</TableCell>
-            <TableCell>ผู้แจ้ง</TableCell> {/* Re-added */}
-            <TableCell>Complain</TableCell> {/* Re-added */}
-            <TableCell>สาเหตุ</TableCell> {/* Re-added */}
-            <TableCell>การแก้ไข</TableCell> {/* Re-added */}
+            <TableCell>ผู้แจ้ง</TableCell>
             <TableCell>ช่องทาง</TableCell>
+            <TableCell>รายละเอียดที่แจ้ง</TableCell>
+            <TableCell>สาเหตุ</TableCell>
+            <TableCell>การแก้ไข</TableCell>
             <TableCell>รูปภาพ</TableCell>
             <TableCell>วันที่แจ้ง</TableCell>
             <TableCell>สถานะ</TableCell>
-            <TableCell align="center">การดำเนินการ</TableCell>
-            <TableCell align="center">รายงาน</TableCell> {/* Column for View Report button */}
+            <TableCell align="center">#</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {safeReports.map((report) => {
-            // Find the project name based on projectId
+          {safeReports.map((report, index) => {
             const projectName = safeProjects.find(p => p.id === report.projectId)?.name || 'N/A';
+            const isSelected = selectedReportIds.includes(report.id as string);
 
             return (
-              <TableRow key={report.id}>
-                <TableCell>{report.id}</TableCell>
+              // The critical part: ensure no whitespace text nodes between <tr> and its <td> children.
+              // This is typically done by removing line breaks and excessive spaces between tags,
+              // or by making sure the first <td> starts immediately after <tr>.
+              <TableRow key={report.id} selected={isSelected}>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    color="primary"
+                    checked={isSelected}
+                    onChange={(event) => onSelectReport(report.id as string, event.target.checked)}
+                  />
+                </TableCell><TableCell>{index + 1}</TableCell>
+                <TableCell>{report.id.slice(-6)}</TableCell>
                 <TableCell>{projectName}</TableCell>
-                <TableCell>{report.reportedBy}</TableCell> {/* Re-added */}
-                <TableCell>{report.complain}</TableCell> {/* Re-added */}
-                <TableCell>{report.causesOfFailure}</TableCell> {/* Re-added */}
-                <TableCell>{report.actionTaken}</TableCell> {/* Re-added */}
-                <TableCell>{report.channel}</TableCell>
+                <TableCell>{report.reportedBy || 'N/A'}</TableCell>
+                <TableCell>{report.channel || 'N/A'}</TableCell>
+                <TableCell>{report.complain || 'N/A'}</TableCell>
+                <TableCell>{report.causesOfFailure || 'N/A'}</TableCell>
+                <TableCell>{report.actionTaken || 'N/A'}</TableCell>
                 <TableCell>
-                  {report.imagePaths.map((path, index) => (
-                    // Ensure 'path' is a string before passing to combineImageUrl
-                    typeof path === 'string' && (
-                      <img
-                        key={index}
-                        src={combineImageUrl(path)}
-                        alt={`Image ${index + 1}`}
-                        style={{ maxWidth: '50px', marginRight: '5px', cursor: 'pointer' }}
-                        onClick={() => handleOpenFullImageModal(combineImageUrl(path))}
-                        onError={(e) => {
-                          e.currentTarget.src = 'https://placehold.co/50x50/cccccc/ffffff?text=No+Image';
-                          e.currentTarget.alt = 'Image not available';
-                        }}
-                      />
-                    )
-                  ))}
+                  {report.imagePaths && report.imagePaths.length > 0 ? (
+                    report.imagePaths.map((path, i) => (
+                      typeof path === 'string' && (
+                        <img
+                          key={i}
+                          src={combineImageUrl(path)}
+                          alt={`Image ${i + 1}`}
+                          style={{ maxWidth: '50px', marginRight: '5px', cursor: 'pointer' }}
+                          onClick={() => handleOpenFullImageModal(combineImageUrl(path))}
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://placehold.co/50x50/cccccc/ffffff?text=No+Image';
+                            e.currentTarget.alt = 'Image not available';
+                          }}
+                        />
+                      )
+                    ))
+                  ) : (
+                    <img
+                      src="https://placehold.co/50x50/cccccc/ffffff?text=No+Image"
+                      alt="No Image"
+                      style={{ maxWidth: '50px' }}
+                    />
+                  )}
                 </TableCell>
                 <TableCell>{formatDate(report.reportDate)}</TableCell>
                 <TableCell>
-                  {/* Display status using Chip with dynamic color */}
                   <Chip label={report.status} color={getStatusColor(report.status)} size="small" />
                 </TableCell>
                 <TableCell align="center">
@@ -152,16 +179,9 @@ export default function ServiceReportTable({ reports, projects, onEdit, onDelete
                   <IconButton aria-label="delete" color="error" onClick={() => onDelete(report.id)}>
                     <DeleteIcon />
                   </IconButton>
-                </TableCell>
-                <TableCell align="center">
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<VisibilityIcon />}
-                    onClick={() => handleViewReport(report.id as string)}
-                  >
-                    ดูรายงาน
-                  </Button>
+                 <IconButton aria-label="view" color="info" onClick={() => handleViewReport(report.id as string)}>
+                    <PictureAsPdfIcon />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             );

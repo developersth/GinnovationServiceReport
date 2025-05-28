@@ -3,6 +3,7 @@
 
 import * as React from 'react';
 import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation'; // Import useRouter
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -12,12 +13,14 @@ import DialogContent from '@mui/material/DialogContent';
 import MuiAlert, { AlertProps } from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
 import AddIcon from '@mui/icons-material/Add';
+import DescriptionIcon from '@mui/icons-material/Description'; // Import Description icon for report button
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+import 'dayjs/locale/th'; // Import Thai locale for Day.js
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isSameOrAfter);
 
@@ -31,6 +34,7 @@ function Alert(props: AlertProps) {
 }
 
 export default function ServiceReportsPage() {
+  const router = useRouter();
   const [reports, setReports] = useState<ServiceReport[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +42,7 @@ export default function ServiceReportsPage() {
   const [editingReport, setEditingReport] = useState<ServiceReport | undefined>(undefined);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info'>('success');
 
   // State for DatePicker values (what user selects in UI)
   const [selectedStartDate, setSelectedStartDate] = useState<Dayjs | null>(dayjs());
@@ -47,6 +51,9 @@ export default function ServiceReportsPage() {
   // State for actual filter dates (what the table filters by)
   const [activeFilterStartDate, setActiveFilterStartDate] = useState<Dayjs | null>(dayjs());
   const [activeFilterEndDate, setActiveFilterEndDate] = useState<Dayjs | null>(dayjs());
+
+  // New state for selected report IDs
+  const [selectedReportIds, setSelectedReportIds] = useState<string[]>([]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -79,7 +86,7 @@ export default function ServiceReportsPage() {
       const isBeforeEndDate = activeFilterEndDate ? reportDate.isSameOrBefore(activeFilterEndDate, 'day') : true;
       return isAfterStartDate && isBeforeEndDate;
     });
-  }, [reports, activeFilterStartDate, activeFilterEndDate]); // Dependencies changed
+  }, [reports, activeFilterStartDate, activeFilterEndDate]);
 
   const handleOpenAddForm = () => {
     setEditingReport(undefined);
@@ -153,23 +160,67 @@ export default function ServiceReportsPage() {
     setSelectedEndDate(null);
     setActiveFilterStartDate(null);
     setActiveFilterEndDate(null);
+    setSelectedReportIds([]); // Clear selections when filter is cleared
+  };
+
+  // Handler for selecting/deselecting reports
+  const handleReportSelection = (reportId: string, isSelected: boolean) => {
+    setSelectedReportIds((prevSelected) =>
+      isSelected
+        ? [...prevSelected, reportId]
+        : prevSelected.filter((id) => id !== reportId)
+    );
+  };
+// Handler for selecting/deselecting all reports
+const handleSelectAllReports = (selectAll: boolean) => {
+  if (selectAll) {
+    // Select all visible/filtered report IDs
+    const allFilteredIds = filteredReports.map((r) => r.id);
+    setSelectedReportIds(allFilteredIds);
+  } else {
+    setSelectedReportIds([]);
+  }
+};
+  // Handler for generating a combined report
+  const handleGenerateReport = () => {
+    if (selectedReportIds.length > 0) {
+      // Navigate to a new page, passing selected IDs as a query parameter
+      // Encode the IDs to be safe in URL
+      const idsParam = selectedReportIds.join(',');
+      router.push(`/admin/reports/selected-reports?ids=${idsParam}`);
+    } else {
+      setSnackbarMessage('Please select at least one report to generate.');
+      setSnackbarSeverity('info');
+      setSnackbarOpen(true);
+    }
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
+    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="th">
       <Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
           <Typography variant="h4" component="h1">
             Service Report Management
           </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleOpenAddForm}
-            startIcon={<AddIcon />}
-          >
-            Add Service Report
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleOpenAddForm}
+              startIcon={<AddIcon />}
+            >
+              Add Service Report
+            </Button>
+            <Button
+              variant="contained"
+              color="secondary" // Use a different color for distinction
+              onClick={handleGenerateReport}
+              startIcon={<DescriptionIcon />}
+              disabled={selectedReportIds.length === 0} // Disable if no reports are selected
+            >
+              สร้างรายงาน
+            </Button>
+          </Box>
         </Box>
 
         {/* Date Filter Section */}
@@ -179,25 +230,27 @@ export default function ServiceReportsPage() {
             label="Start Date"
             value={selectedStartDate}
             onChange={(newValue) => setSelectedStartDate(newValue)}
+            format="DD/MM/YYYY"
             slotProps={{ textField: { size: 'small', sx: { width: '180px' } } }}
           />
           <DatePicker
             label="End Date"
             value={selectedEndDate}
             onChange={(newValue) => setSelectedEndDate(newValue)}
+            format="DD/MM/YYYY"
             slotProps={{ textField: { size: 'small', sx: { width: '180px' } } }}
           />
           <Button
-            variant="contained" // Changed to contained for search button
+            variant="contained"
             color="primary"
-            onClick={handleSearch} // Search button handler
+            onClick={handleSearch}
             sx={{ height: '40px' }}
           >
             Search
           </Button>
           <Button
             variant="outlined"
-            onClick={handleClearFilter} // Clear filter button handler
+            onClick={handleClearFilter}
             sx={{ height: '40px' }}
           >
             Clear Filter
@@ -214,6 +267,9 @@ export default function ServiceReportsPage() {
             projects={projects}
             onEdit={handleEditReport}
             onDelete={handleDeleteReport}
+            selectedReportIds={selectedReportIds} // Pass selected IDs to table
+            onSelectReport={handleReportSelection} // Pass selection handler to table
+            onSelectAllReports={handleSelectAllReports} 
           />
         )}
 

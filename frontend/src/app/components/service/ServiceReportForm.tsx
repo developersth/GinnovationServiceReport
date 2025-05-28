@@ -110,6 +110,10 @@ export default function ServiceReportForm({ initialData, onSubmit, onCancel, pro
       imagePaths: [...existingImagePaths, ...newFilesToUpload],
       reportDate: reportDate ? reportDate.format('YYYY-MM-DD') : '',
       status,
+      createdBy: initialData?.createdBy || '', // Assuming createdBy is not required for new reports
+      createdAt: initialData?.createdAt || new Date().toISOString(), // Use current date for new reports  
+      updatedBy: initialData?.updatedBy || '', // Assuming updatedBy is not required for new reports
+      updatedAt: new Date().toISOString(), // Use current date for updates
     };
 
     onSubmit(initialData ? { ...initialData, ...reportData } : reportData);
