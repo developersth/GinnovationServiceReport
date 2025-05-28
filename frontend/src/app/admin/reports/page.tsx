@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -12,6 +12,15 @@ import DialogContent from '@mui/material/DialogContent';
 import MuiAlert, { AlertProps } from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
 import AddIcon from '@mui/icons-material/Add';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs, { Dayjs } from 'dayjs';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+import 'dayjs/locale/th'; // <--- Import Thai locale for Day.js
+dayjs.extend(isSameOrBefore);
+dayjs.extend(isSameOrAfter);
 
 import ServiceReportTable from '../../components/service/ServiceReportTable';
 import ServiceReportForm from '../../components/service/ServiceReportForm';
@@ -31,6 +40,14 @@ export default function ServiceReportsPage() {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
+
+  // State for DatePicker values (what user selects in UI)
+  const [selectedStartDate, setSelectedStartDate] = useState<Dayjs | null>(dayjs());
+  const [selectedEndDate, setSelectedEndDate] = useState<Dayjs | null>(dayjs());
+
+  // State for actual filter dates (what the table filters by)
+  const [activeFilterStartDate, setActiveFilterStartDate] = useState<Dayjs | null>(dayjs());
+  const [activeFilterEndDate, setActiveFilterEndDate] = useState<Dayjs | null>(dayjs());
 
   const fetchData = async () => {
     setLoading(true);
@@ -55,6 +72,16 @@ export default function ServiceReportsPage() {
     fetchData();
   }, []);
 
+  // Filter reports based on active filter dates (triggered by Search button)
+  const filteredReports = useMemo(() => {
+    return reports.filter(report => {
+      const reportDate = dayjs(report.reportDate);
+      const isAfterStartDate = activeFilterStartDate ? reportDate.isSameOrAfter(activeFilterStartDate, 'day') : true;
+      const isBeforeEndDate = activeFilterEndDate ? reportDate.isSameOrBefore(activeFilterEndDate, 'day') : true;
+      return isAfterStartDate && isBeforeEndDate;
+    });
+  }, [reports, activeFilterStartDate, activeFilterEndDate]);
+
   const handleOpenAddForm = () => {
     setEditingReport(undefined);
     setOpenFormModal(true);
@@ -77,7 +104,7 @@ export default function ServiceReportsPage() {
       setSnackbarSeverity('success');
       setSnackbarOpen(true);
       setOpenFormModal(false);
-      fetchData();
+      fetchData(); // Re-fetch data after submission
     } catch (error) {
       console.error('Error saving service report:', error);
       setSnackbarMessage('Failed to save service report.');
@@ -93,7 +120,7 @@ export default function ServiceReportsPage() {
         setSnackbarMessage('Service Report deleted successfully!');
         setSnackbarSeverity('success');
         setSnackbarOpen(true);
-        fetchData();
+        fetchData(); // Re-fetch data after deletion
       } catch (error) {
         console.error('Error deleting service report:', error);
         setSnackbarMessage('Failed to delete service report.');
@@ -115,51 +142,101 @@ export default function ServiceReportsPage() {
     setSnackbarOpen(false);
   };
 
+  // Handler for the Search button
+  const handleSearch = () => {
+    setActiveFilterStartDate(selectedStartDate);
+    setActiveFilterEndDate(selectedEndDate);
+  };
+
+  // Handler for the Clear Filter button
+  const handleClearFilter = () => {
+    setSelectedStartDate(null);
+    setSelectedEndDate(null);
+    setActiveFilterStartDate(null);
+    setActiveFilterEndDate(null);
+  };
+
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography variant="h4" component="h1">
-          Service Report Management
-        </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleOpenAddForm}
-          startIcon={<AddIcon />}
-        >
-          Add Service Report
-        </Button>
-      </Box>
-
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <CircularProgress />
+    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="th"> {/* <--- Added adapterLocale="th" */}
+      <Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+          <Typography variant="h4" component="h1">
+            Service Report Management
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleOpenAddForm}
+            startIcon={<AddIcon />}
+          >
+            Add Service Report
+          </Button>
         </Box>
-      ) : (
-        <ServiceReportTable
-          reports={reports}
-          projects={projects}
-          onEdit={handleEditReport}
-          onDelete={handleDeleteReport}
-        />
-      )}
 
-      <Dialog open={openFormModal} onClose={handleCloseFormModal}>
-        <DialogContent>
-          <ServiceReportForm
-            initialData={editingReport}
-            projects={projects}
-            onSubmit={handleFormSubmit}
-            onCancel={handleCloseFormModal} // Corrected line
+        {/* Date Filter Section */}
+        <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center' }}>
+          <Typography variant="subtitle1">Filter by Date:</Typography>
+          <DatePicker
+            label="Start Date"
+            value={selectedStartDate}
+            onChange={(newValue) => setSelectedStartDate(newValue)}
+            format="DD/MM/YYYY" // กำหนด format เป็น DD/MM/YYYY
+            slotProps={{ textField: { size: 'small', sx: { width: '180px' } } }}
           />
-        </DialogContent>
-      </Dialog>
+          <DatePicker
+            label="End Date"
+            value={selectedEndDate}
+            onChange={(newValue) => setSelectedEndDate(newValue)}
+            format="DD/MM/YYYY" // กำหนด format เป็น DD/MM/YYYY
+            slotProps={{ textField: { size: 'small', sx: { width: '180px' } } }}
+          />
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleSearch}
+            sx={{ height: '40px' }}
+          >
+            Search
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={handleClearFilter}
+            sx={{ height: '40px' }}
+          >
+            Clear Filter
+          </Button>
+        </Box>
 
-      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleSnackbarClose}>
-        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity}>
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
-    </Box>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <ServiceReportTable
+            reports={filteredReports}
+            projects={projects}
+            onEdit={handleEditReport}
+            onDelete={handleDeleteReport}
+          />
+        )}
+
+        <Dialog open={openFormModal} onClose={handleCloseFormModal}>
+          <DialogContent>
+            <ServiceReportForm
+              initialData={editingReport}
+              projects={projects}
+              onSubmit={handleFormSubmit}
+              onCancel={handleCloseFormModal}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleSnackbarClose}>
+          <Alert onClose={handleSnackbarClose} severity={snackbarSeverity}>
+            {snackbarMessage}
+          </Alert>
+        </Snackbar>
+      </Box>
+    </LocalizationProvider>
   );
 }

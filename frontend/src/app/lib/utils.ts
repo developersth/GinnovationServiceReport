@@ -32,7 +32,7 @@ export function formatDate(dateString: string): string {
     const date = new Date(dateString);
     // ใช้ toLocaleDateString เพื่อให้รูปแบบวันที่เป็นไปตาม Local ของผู้ใช้งาน
     // หรือกำหนด options เพื่อควบคุมรูปแบบที่แน่นอน
-    return date.toLocaleDateString('th-TH', {
+    return date.toLocaleDateString('en-US', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
