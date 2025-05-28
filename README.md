@@ -17,3 +17,7 @@ dotnet dev-certs https -ep ./https/aspnetapp.pfx -p hoOkqJB9zu
 
 
 npm run dev
+
+rm -rf node_modules .next package-lock.json
+npm install
+npm run build

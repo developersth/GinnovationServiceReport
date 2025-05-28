@@ -155,37 +155,34 @@ export async function getServiceReports(): Promise<ServiceReport[]> {
   }
   return await response.json();
 }
-// --- IMPORTANT: Update addServiceReport for multipart/form-data with imagePaths ---
+
+// --- IMPORTANT: Updated addServiceReport for multipart/form-data with imagePaths ---
 export async function addServiceReport(report: Omit<ServiceReport, 'id'>): Promise<ServiceReport> {
   const formData = new FormData();
 
-  // Append text fields from the report object
-  // Ensure these names match the properties in your ServiceReportDto in C#
-  formData.append('projectId', report.projectId);
-  formData.append('reportedBy', report.reportedBy);
-  formData.append('complain', report.complain);
-  formData.append('causesOfFailure', report.causesOfFailure);
-  formData.append('actionTaken', report.actionTaken);
-  formData.append('channel', report.channel);
-  formData.append('reportDate', report.reportDate);
-  formData.append('status', report.status);
+  // Append text fields with 'reportDto.' prefix to match backend's [FromForm] ServiceReportDto
+  // These names must match the properties in your ServiceReportDto in C#
+  formData.append('reportDto.projectId', report.projectId);
+  formData.append('reportDto.reportedBy', report.reportedBy);
+  formData.append('reportDto.complain', report.complain);
+  formData.append('reportDto.causesOfFailure', report.causesOfFailure);
+  formData.append('reportDto.actionTaken', report.actionTaken);
+  formData.append('reportDto.channel', report.channel);
+  formData.append('reportDto.reportDate', report.reportDate);
+  formData.append('reportDto.status', report.status);
 
   // Append image files
-  report.imagePaths.forEach((item, index) => { // <--- เปลี่ยนจาก imageUrls เป็น imagePaths
+  report.imagePaths.forEach((item) => {
     if (item instanceof File) {
       // 'images' must match the parameter name in your backend's CreateWithImages method (List<IFormFile>? images)
       formData.append(`images`, item, item.name);
-    } else {
-      // ถ้าเป็น string (URL ที่มีอยู่แล้ว)
-      // สำหรับการเพิ่มใหม่, เราจะไม่ส่ง URL ที่มีอยู่แล้วผ่าน parameter 'images'
-      // ถ้า backend ต้องการ list ของ string (ImagePaths) แยกต่างหากสำหรับ existing URLs,
-      // คุณจะต้องเพิ่ม formData.append('imagePaths', item) หรือ formData.append('imagePaths[index]', item)
-      // แต่โดยทั่วไป Create endpoint จะรับแต่ไฟล์ใหม่
     }
+    // Existing image paths (strings) are not sent during 'add', only 'update'
   });
 
-  // ใช้ endpoint เฉพาะสำหรับการอัปโหลดรูปภาพ
-  const response = await fetch(`${API_BASE_URL}/api/ServiceReport`, {
+  // Use the correct endpoint for adding service reports with images
+  // Assuming backend endpoint is /api/ServiceReport/CreateWithImages
+  const response = await fetch(`${API_BASE_URL}/api/ServiceReport/CreateWithImages`, {
     method: 'POST',
     body: formData,
   });
@@ -196,6 +193,7 @@ export async function addServiceReport(report: Omit<ServiceReport, 'id'>): Promi
   }
   return await response.json();
 }
+
 // --- IMPORTANT: Corrected updateServiceReport for multipart/form-data ---
 export async function updateServiceReport(updatedReport: ServiceReport): Promise<ServiceReport> {
   const formData = new FormData();
@@ -204,7 +202,7 @@ export async function updateServiceReport(updatedReport: ServiceReport): Promise
   // These names must match the properties in your ServiceReportDto in C#
   // Example: [FromForm] ServiceReportDto reportDto in backend
   formData.append('reportDto.projectId', updatedReport.projectId);
-  formData.append('reportDto.reportedBy', updatedReport.reportedBy); // Frontend 'reporter' maps to backend 'ReportedBy'
+  formData.append('reportDto.reportedBy', updatedReport.reportedBy);
   formData.append('reportDto.complain', updatedReport.complain);
   formData.append('reportDto.causesOfFailure', updatedReport.causesOfFailure);
   formData.append('reportDto.actionTaken', updatedReport.actionTaken);
@@ -247,7 +245,17 @@ export async function updateServiceReport(updatedReport: ServiceReport): Promise
   return updatedReport; // Assuming 204 No Content or similar
 }
 
-
+// --- New: getServiceReportById function ---
+export async function getServiceReportById(id: string): Promise<ServiceReport | undefined> {
+  const response = await fetch(`${API_BASE_URL}/api/ServiceReport/${id}`);
+  if (response.status === 404) {
+    return undefined;
+  }
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
+}
 
 export async function deleteServiceReport(id: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/api/ServiceReport/${id}`, {

@@ -2,6 +2,7 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation'; // Import useRouter
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -13,10 +14,13 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import VisibilityIcon from '@mui/icons-material/Visibility'; // Import Visibility icon for "ดูรายงาน" button
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Chip from '@mui/material/Chip'; // Import Chip component
+// Removed Box and Typography imports as they are no longer needed for combined cell
+
 import { ServiceReport, Project } from '../../types';
 import { formatDate, combineImageUrl } from '../../lib/utils';
 
@@ -50,6 +54,7 @@ const getStatusColor = (status: ServiceReport['status']): 'default' | 'primary' 
 };
 
 export default function ServiceReportTable({ reports, projects, onEdit, onDelete }: ServiceReportTableProps) {
+  const router = useRouter(); // Initialize useRouter for navigation
   // Safeguard to ensure projects and reports are arrays before use
   const safeProjects = projects || [];
   const safeReports = reports || [];
@@ -75,6 +80,14 @@ export default function ServiceReportTable({ reports, projects, onEdit, onDelete
     setFullImageUrl(null);
   };
 
+  /**
+   * Navigates to the detailed service report page.
+   * @param reportId The ID of the service report to view.
+   */
+  const handleViewReport = (reportId: string) => {
+    router.push(`/admin/reports/service-report/${reportId}`);
+  };
+
   return (
     // Make the TableContainer responsive by allowing horizontal scrolling
     <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
@@ -83,15 +96,16 @@ export default function ServiceReportTable({ reports, projects, onEdit, onDelete
           <TableRow>
             <TableCell>รหัส</TableCell>
             <TableCell>โปรเจกต์</TableCell>
-            <TableCell>ผู้แจ้ง</TableCell>
-            <TableCell>Complain</TableCell>
-            <TableCell>สาเหตุ</TableCell>
-            <TableCell>การแก้ไข</TableCell>
+            <TableCell>ผู้แจ้ง</TableCell> {/* Re-added */}
+            <TableCell>Complain</TableCell> {/* Re-added */}
+            <TableCell>สาเหตุ</TableCell> {/* Re-added */}
+            <TableCell>การแก้ไข</TableCell> {/* Re-added */}
             <TableCell>ช่องทาง</TableCell>
             <TableCell>รูปภาพ</TableCell>
             <TableCell>วันที่แจ้ง</TableCell>
             <TableCell>สถานะ</TableCell>
             <TableCell align="center">การดำเนินการ</TableCell>
+            <TableCell align="center">รายงาน</TableCell> {/* Column for View Report button */}
           </TableRow>
         </TableHead>
         <TableBody>
@@ -103,24 +117,27 @@ export default function ServiceReportTable({ reports, projects, onEdit, onDelete
               <TableRow key={report.id}>
                 <TableCell>{report.id}</TableCell>
                 <TableCell>{projectName}</TableCell>
-                <TableCell>{report.reportedBy}</TableCell>
-                <TableCell>{report.complain}</TableCell>
-                <TableCell>{report.causesOfFailure}</TableCell>
-                <TableCell>{report.actionTaken}</TableCell>
+                <TableCell>{report.reportedBy}</TableCell> {/* Re-added */}
+                <TableCell>{report.complain}</TableCell> {/* Re-added */}
+                <TableCell>{report.causesOfFailure}</TableCell> {/* Re-added */}
+                <TableCell>{report.actionTaken}</TableCell> {/* Re-added */}
                 <TableCell>{report.channel}</TableCell>
                 <TableCell>
                   {report.imagePaths.map((path, index) => (
-                    <img
-                      key={index}
-                      src={combineImageUrl(path as string)}
-                      alt={`Image ${index + 1}`}
-                      style={{ maxWidth: '50px', marginRight: '5px', cursor: 'pointer' }}
-                      onClick={() => handleOpenFullImageModal(combineImageUrl(path as string))}
-                      onError={(e) => {
-                        e.currentTarget.src = 'https://placehold.co/50x50/cccccc/ffffff?text=No+Image';
-                        e.currentTarget.alt = 'Image not available';
-                      }}
-                    />
+                    // Ensure 'path' is a string before passing to combineImageUrl
+                    typeof path === 'string' && (
+                      <img
+                        key={index}
+                        src={combineImageUrl(path)}
+                        alt={`Image ${index + 1}`}
+                        style={{ maxWidth: '50px', marginRight: '5px', cursor: 'pointer' }}
+                        onClick={() => handleOpenFullImageModal(combineImageUrl(path))}
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://placehold.co/50x50/cccccc/ffffff?text=No+Image';
+                          e.currentTarget.alt = 'Image not available';
+                        }}
+                      />
+                    )
                   ))}
                 </TableCell>
                 <TableCell>{formatDate(report.reportDate)}</TableCell>
@@ -135,6 +152,16 @@ export default function ServiceReportTable({ reports, projects, onEdit, onDelete
                   <IconButton aria-label="delete" color="error" onClick={() => onDelete(report.id)}>
                     <DeleteIcon />
                   </IconButton>
+                </TableCell>
+                <TableCell align="center">
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<VisibilityIcon />}
+                    onClick={() => handleViewReport(report.id as string)}
+                  >
+                    ดูรายงาน
+                  </Button>
                 </TableCell>
               </TableRow>
             );
