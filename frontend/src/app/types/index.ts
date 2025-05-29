@@ -3,8 +3,13 @@
 export interface Project {
   id: string;
   name: string;
-  imageUrl: string; // URL ของรูปภาพที่ได้จาก Backend
-  imageFile?: File; // <-- เพิ่ม property นี้สำหรับ Frontend เพื่อเก็บ File object ชั่วคราว
+  imageUrl: string;
+  imageFile?: File;
+
+  customerName: string;
+  customerAddress: string;
+  contactPerson: string;
+  tel: string;
 }
 
 export interface User {

@@ -309,6 +309,7 @@ export default function ServiceReportForm({ initialData, onSubmit, onCancel, pro
           <DatePicker
             label="วันที่แจ้ง"
             value={reportDate}
+            format="DD/MM/YYYY" // Set display format
             onChange={(newValue) => setReportDate(newValue)}
             slotProps={{
               textField: {

@@ -16,23 +16,27 @@ export async function getProjects(): Promise<Project[]> {
 export async function addProject(project: Omit<Project, 'id'>): Promise<Project> {
   const formData = new FormData();
   formData.append('name', project.name);
+  formData.append('customerName', project.customerName);
+  formData.append('customerAddress', project.customerAddress);
+  formData.append('contactPerson', project.contactPerson);
+  formData.append('tel', project.tel);
 
   if (project.imageFile) {
     formData.append('Image', project.imageFile, project.imageFile.name);
   } else if (project.imageUrl) {
-    // ถ้ามี imageUrl เดิม (กรณี update ที่ไม่ได้เปลี่ยนรูป)
-    formData.append('imageUrl', project.imageUrl); // ส่ง imageUrl ไปด้วย
+    formData.append('imageUrl', project.imageUrl);
   }
-
 
   const response = await fetch(`${API_BASE_URL}/api/Project`, {
     method: 'POST',
     body: formData,
   });
+
   if (!response.ok) {
     const errorBody = await response.text();
     throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
   }
+
   return await response.json();
 }
 
@@ -40,17 +44,16 @@ export async function updateProject(updatedProject: Project): Promise<Project> {
   const formData = new FormData();
   formData.append('id', updatedProject.id);
   formData.append('name', updatedProject.name);
+  formData.append('customerName', updatedProject.customerName);
+  formData.append('customerAddress', updatedProject.customerAddress);
+  formData.append('contactPerson', updatedProject.contactPerson);
+  formData.append('tel', updatedProject.tel);
 
   if (updatedProject.imageFile) {
     formData.append('Image', updatedProject.imageFile, updatedProject.imageFile.name);
   } else if (updatedProject.imageUrl) {
-    // ถ้าไม่มีไฟล์ใหม่ แต่มี imageUrl เดิม
-    formData.append('imageUrl', updatedProject.imageUrl); // ส่ง imageUrl ไปด้วย
+    formData.append('imageUrl', updatedProject.imageUrl);
   } else {
-    // ถ้าไม่มีรูปภาพเลย (ถูกลบออกไป)
-    // คุณอาจจะต้องส่ง flag พิเศษไปบอก Backend ว่าให้ลบรูปภาพ
-    // หรือ Backend อาจจะถือว่าถ้า Image และ imageUrl ไม่ถูกส่งมาก็คือไม่มีรูป
-    // สำหรับตอนนี้เราจะส่ง imageUrl เป็น empty string ไป
     formData.append('imageUrl', '');
   }
 
@@ -58,12 +61,15 @@ export async function updateProject(updatedProject: Project): Promise<Project> {
     method: 'PUT',
     body: formData,
   });
+
   if (!response.ok) {
     const errorBody = await response.text();
     throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
   }
+
   return updatedProject;
 }
+
 
 export async function deleteProject(id: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/api/Project/${id}`, {

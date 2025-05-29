@@ -57,7 +57,11 @@ namespace backend.Controllers
             var project = new Project
             {
                 Name = name,
-                ImageUrl = imageUrl
+                ImageUrl = imageUrl,
+                CustomerName = dto.CustomerName,
+                CustomerAddress = dto.CustomerAddress,
+                ContactPerson = dto.ContactPerson,
+                Tel = dto.Tel
             };
 
             await _repository.CreateAsync(project);
@@ -91,6 +95,7 @@ namespace backend.Controllers
                 var fileName = $"{Guid.NewGuid()}{Path.GetExtension(dto.Image.FileName)}";
                 var imagePath = Path.Combine(_env.WebRootPath, "images/projects", fileName);
 
+
                 using (var stream = new FileStream(imagePath, FileMode.Create))
                 {
                     await dto.Image.CopyToAsync(stream);
@@ -99,6 +104,11 @@ namespace backend.Controllers
                 // Set new image URL (use full URL if needed)
                 existing.ImageUrl = $"/images/projects/{fileName}";
             }
+            existing.Name = name;
+            existing.CustomerName = dto.CustomerName;
+            existing.CustomerAddress = dto.CustomerAddress;
+            existing.ContactPerson = dto.ContactPerson;
+            existing.Tel = dto.Tel;
 
             await _repository.UpdateAsync(id, existing);
             return NoContent();
