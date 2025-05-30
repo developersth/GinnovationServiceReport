@@ -96,13 +96,13 @@ const PrintableServiceReport: React.FC<PrintableServiceReportProps> = ({ reports
               <TableCell sx={{ fontWeight: 'bold', width: '30%' }}>การแก้ไข/ดำเนินการ</TableCell>
             </TableRow>
           </TableHead>
-          <TableBody>
+  <TableBody>
             {reports.map((reportItem) => (
               <TableRow key={reportItem.id}>
-                <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDate(reportItem.reportDate)}</TableCell>
-                <TableCell sx={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{reportItem.complain}</TableCell>
-                <TableCell sx={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{reportItem.causesOfFailure}</TableCell>
-                <TableCell sx={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{reportItem.actionTaken}</TableCell>
+                <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.75rem' }}>{formatDate(reportItem.reportDate)}</TableCell>
+                <TableCell sx={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', fontSize: '0.75rem' }}>{reportItem.complain}</TableCell>
+                <TableCell sx={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', fontSize: '0.75rem' }}>{reportItem.causesOfFailure}</TableCell>
+                <TableCell sx={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', fontSize: '0.75rem' }}>{reportItem.actionTaken}</TableCell>
               </TableRow>
             ))}
           </TableBody>
