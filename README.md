@@ -89,6 +89,7 @@ pm2 start ecosystem.config.js
 pm2 startup
 pm2 save
 
+pm2 delete all
 pm2 flush
 
 pm2 start ecosystem.config.js --log-date-format "YYYY-MM-DD HH:mm:ss" --time

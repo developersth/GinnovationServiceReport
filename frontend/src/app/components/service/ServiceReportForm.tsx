@@ -117,7 +117,7 @@ export default function ServiceReportForm({ initialData, onSubmit, onCancel, pro
       actionTaken,
       channel,
       imagePaths: [...existingImagePaths, ...newFilesToUpload],
-      reportDate: reportDate ? reportDate.format('YYYY-MM-DD') : '',
+      reportDate: reportDate ? reportDate.toISOString() : '',
       status,
       // Assign currentUser.name to createdBy for new reports,
       // otherwise retain existing createdBy.
