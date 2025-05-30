@@ -12,7 +12,10 @@ import CardContent from '@mui/material/CardContent';
 import MuiAlert, { AlertProps } from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
 import CircularProgress from '@mui/material/CircularProgress';
-import { useRouter } from 'next/navigation'; // สำหรับการ redirect หลังจาก Login
+import { useRouter } from 'next/navigation';
+
+// IMPORT THE ACTUAL LOGIN FUNCTION
+import { login } from '../../lib/api/auth'; // Adjust path if auth.ts is located differently
 
 // ฟังก์ชัน Alert สำหรับ Snackbar
 function Alert(props: AlertProps) {
@@ -38,30 +41,31 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
     setLoading(true);
 
     try {
-      // **นี่คือส่วนที่คุณจะเรียก API จริงสำหรับการ Login**
-      // สำหรับตอนนี้ เราจะจำลองการเรียก API
-      const response = await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          if (username === 'admin' && password === 'admin') {
-            resolve({ success: true, message: 'Login successful!' });
-          } else {
-            reject(new Error('Invalid username or password.'));
-          }
-        }, 1500); // Simulate network delay
-      });
+      // **REPLACE SIMULATED LOGIN WITH ACTUAL API CALL**
+      const success = await login(username, password); // Call your actual login function
 
-      if ((response as any).success) {
-        setSnackbarMessage('Login successful!');
+      if (success) {
+        setSnackbarMessage('เข้าสู่ระบบสำเร็จ!'); // Login successful message
         setSnackbarSeverity('success');
         setSnackbarOpen(true);
-        // ใน Production: อาจจะเก็บ Token หรือ Session ใน Local Storage/Cookies
-        localStorage.setItem('isLoggedIn', 'true'); // <--- สำคัญ: บันทึกสถานะว่า Login แล้ว
-        // แล้ว redirect ไปยังหน้า Dashboard
-        onLoginSuccess(); // เรียก callback
-        router.push('/admin/dashboard'); // Redirect ไปหน้า Dashboard
+
+        // Your login function in auth.ts already handles localStorage.setItem('isLoggedIn', 'true');
+        // and storing token, username, displayName.
+        // So, no need to set isLoggedIn here again.
+
+        onLoginSuccess(); // Call the callback provided by the parent component
+        router.push('/admin/dashboard'); // Redirect to Dashboard
+      } else {
+        // This 'else' block might not be reached if your login function throws an error directly
+        // rather than returning 'false' on failure. The catch block will usually handle errors.
+        setSnackbarMessage('เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบชื่อผู้ใช้และรหัสผ่าน');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
       }
     } catch (error: any) {
-      setSnackbarMessage(error.message || 'Login failed. Please try again.');
+      // Handle errors from the login function (e.g., network issues, invalid credentials from API)
+      const errorMessage = error.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ กรุณาลองใหม่อีกครั้ง';
+      setSnackbarMessage(errorMessage);
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
     } finally {
@@ -118,13 +122,6 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
           >
             {loading ? <CircularProgress size={24} color="inherit" /> : 'เข้าสู่ระบบ'}
           </Button>
-          {/* สามารถเพิ่ม Link สำหรับลืมรหัสผ่าน หรือลงทะเบียนได้ที่นี่ */}
-          {/* <Typography variant="body2" align="center" mt={2}>
-            <Link href="#">ลืมรหัสผ่าน?</Link>
-          </Typography>
-          <Typography variant="body2" align="center">
-            ยังไม่มีบัญชี? <Link href="/register">สมัครสมาชิก</Link>
-          </Typography> */}
         </Box>
       </CardContent>
 

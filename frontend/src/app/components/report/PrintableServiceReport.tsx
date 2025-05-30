@@ -1,8 +1,11 @@
 // src/components/report/PrintableServiceReport.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react'; // Import useState and useEffect
 import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Divider, Checkbox, FormControlLabel, Grid } from '@mui/material';
 import { ServiceReport, Project } from '../../types';
 import { combineImageUrl, formatDate } from '../../lib/utils';
+
+// Import the getName function
+import { getName } from '../../lib/api/auth'; // Adjust path if needed
 
 interface PrintableServiceReportProps {
   reports: ServiceReport[];
@@ -10,15 +13,24 @@ interface PrintableServiceReportProps {
 }
 
 const PrintableServiceReport: React.FC<PrintableServiceReportProps> = ({ reports, project }) => {
+  // State to hold the reporter's name
+  const [reporterName, setReporterName] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Get the name from localStorage when the component mounts
+    setReporterName(getName());
+  }, []); // Empty dependency array means this runs once on mount
+
   if (!reports || reports.length === 0) {
     return <Typography>No service report data available for printing.</Typography>;
   }
 
-  const customerName = project?.name || "N/A";
-  const customerAddress = "42/1 หมู่ที่ 1 ถนนสุขุมวิท ตำบลทุ่งสุขลา อำเภอศรีราชา จังหวัดชลบุรี 20230";
-  const contactPerson = "K.Rachapon Rueanpingwang";
-  const contactTel = "085-0374-568";
-  const serviceUnder = "Contract";
+  const projectName = project?.name || "N/A";
+  const customerName = project?.customerName || "N/A";
+  const customerAddress = project?.customerAddress || "N/A";
+  const contactPerson = project?.contactPerson || "N/A";
+  const contactTel = project?.tel || "N/A";
+  const serviceUnder = project?.serviceUnder || "N/A";
 
   const serviceStaff = [
     { name: "", date: "", start: "", end: "", workingHours: "", travellingHours: "", charging: "Non Charge" },
@@ -57,6 +69,7 @@ const PrintableServiceReport: React.FC<PrintableServiceReportProps> = ({ reports
         <Table size="small" sx={{ '& td, & th': { border: '1px solid #ccc', p: 0.5 } }}>
           <TableBody>
             {[
+              ['Project', projectName],
               ['Customer', customerName],
               ['Address', customerAddress],
               ['Contact Person', contactPerson],
@@ -111,7 +124,9 @@ const PrintableServiceReport: React.FC<PrintableServiceReportProps> = ({ reports
               <TableBody>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 'bold', width: '30%' }}>Report by</TableCell>
-                  <TableCell sx={{ width: '70%', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>Kritsade Satewin</TableCell>
+                  <TableCell sx={{ width: '70%', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+                    {reporterName || 'N/A'} {/* Use the state variable here */}
+                  </TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 'bold' }}>Date</TableCell>

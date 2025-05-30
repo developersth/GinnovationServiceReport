@@ -11,4 +11,5 @@ public class ProjectCreateDto
     public string ContactPerson { get; set; } = string.Empty;
 
     public string Tel { get; set; } = string.Empty;
+    public string ServiceUnder { get; set; } = string.Empty;
 }

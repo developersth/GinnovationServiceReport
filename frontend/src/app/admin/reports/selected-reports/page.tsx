@@ -2,17 +2,33 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { useSearchParams } from 'next/navigation'; // Import useSearchParams
-import { Box, Typography, CircularProgress, Button, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Paper } from '@mui/material';
+import { useSearchParams } from 'next/navigation';
+import {
+  Box,
+  Typography,
+  CircularProgress,
+  Button,
+  TableContainer,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Paper,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
+} from '@mui/material';
 import PrintIcon from '@mui/icons-material/Print';
 import PrintableServiceReport from '../../../components/report/PrintableServiceReport';
-import { getServiceReportById, getProjectById } from '../../../lib/data';
+import { getServiceReportById, getProjectById, getProjects } from '../../../lib/api/data';
 import { ServiceReport, Project } from '../../../types';
 
 // Import PDF generation libraries
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import dayjs from 'dayjs'; // Ensure dayjs is imported
+import dayjs from 'dayjs';
 
 // Helper function to format date using dayjs
 function formatDate(dateString: string | Date | undefined): string {
@@ -22,13 +38,14 @@ function formatDate(dateString: string | Date | undefined): string {
 
 export default function SelectedReportsPage() {
   const searchParams = useSearchParams();
-  const reportIdsParam = searchParams.get('ids'); // Get 'ids' from query parameter
+  const reportIdsParam = searchParams.get('ids');
 
-  const [reports, setReports] = useState<ServiceReport[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]); // Store all fetched projects
+  const [allReports, setAllReports] = useState<ServiceReport[]>([]); // Store all fetched reports
+  // const [displayedReports, setDisplayedReports] = useState<ServiceReport[]>([]); // This state is no longer needed for filtering the table
+  const [allProjects, setAllProjects] = useState<Project[]>([]); // Store all projects for the combobox
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(''); // State for selected project in combobox
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
 
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -52,40 +69,42 @@ export default function SelectedReportsPage() {
 
       try {
         const fetchedReports: ServiceReport[] = [];
-        const fetchedProjectsMap = new Map<string, Project>(); // Use a Map to avoid duplicate project fetches
+        const fetchedProjectsMap = new Map<string, Project>();
+
+        // Fetch all projects initially for the combobox
+        const projectsData = await getProjects();
+        if (projectsData) {
+          setAllProjects(projectsData);
+          projectsData.forEach(p => fetchedProjectsMap.set(p.id, p));
+        }
 
         for (const id of ids) {
-          console.log(`[SelectedReportsPage] Fetching report with ID: ${id}`);
           const reportData = await getServiceReportById(id);
           if (reportData) {
-            console.log(`[SelectedReportsPage] Fetched report ${id}:`, reportData);
             fetchedReports.push(reportData);
-            // Fetch project if not already fetched
-            if (reportData.projectId) { // Check if projectId exists
-              console.log(`[SelectedReportsPage] Report ${id} has projectId: ${reportData.projectId}. Checking if project already fetched.`);
-              if (!fetchedProjectsMap.has(reportData.projectId)) {
-                console.log(`[SelectedReportsPage] Fetching project for projectId: ${reportData.projectId}`);
-                const projectData = await getProjectById(reportData.projectId);
-                if (projectData) {
-                  console.log(`[SelectedReportsPage] Fetched project ${reportData.projectId}:`, projectData);
-                  fetchedProjectsMap.set(reportData.projectId, projectData);
-                } else {
-                  console.warn(`[SelectedReportsPage] Project with ID ${reportData.projectId} not found for report ${id}.`);
-                }
+            // Ensure project for this report is in the map, if not already fetched by getAllProjects
+            if (reportData.projectId && !fetchedProjectsMap.has(reportData.projectId)) {
+              const projectData = await getProjectById(reportData.projectId);
+              if (projectData) {
+                fetchedProjectsMap.set(reportData.projectId, projectData);
               } else {
-                console.log(`[SelectedReportsPage] Project with ID ${reportData.projectId} already fetched.`);
+                console.warn(`[SelectedReportsPage] Project with ID ${reportData.projectId} not found for report ${id}.`);
               }
-            } else {
-              console.warn(`[SelectedReportsPage] Report ${id} has a null or undefined projectId.`);
             }
           } else {
             console.warn(`[SelectedReportsPage] Service Report with ID ${id} not found.`);
           }
         }
-        setReports(fetchedReports);
-        setProjects(Array.from(fetchedProjectsMap.values())); // Convert Map values to array
-        console.log("[SelectedReportsPage] All reports fetched:", fetchedReports);
-        console.log("[SelectedReportsPage] All unique projects fetched:", Array.from(fetchedProjectsMap.values()));
+        setAllReports(fetchedReports); // Store all reports
+        // setDisplayedReports(fetchedReports); // No longer needed for initial display of filtered reports
+        // If there's a specific project ID in the first report, pre-select it
+        if (fetchedReports.length > 0 && fetchedReports[0].projectId) {
+          setSelectedProjectId(fetchedReports[0].projectId);
+        } else if (projectsData.length > 0) {
+          // If no report has a project ID, or no reports, select the first project by default
+          // You might want to set a default "All" or no selection here if preferable.
+          setSelectedProjectId(projectsData[0].id);
+        }
       } catch (err) {
         console.error('[SelectedReportsPage] Failed to fetch reports or projects:', err);
         setError('Failed to load selected service reports.');
@@ -95,42 +114,53 @@ export default function SelectedReportsPage() {
     };
 
     fetchData();
-  }, [reportIdsParam]); // Re-run effect if reportIdsParam changes
+  }, [reportIdsParam]);
+
+  // REMOVED: Effect to filter reports when selectedProjectId or allReports changes
+  // You explicitly said "ไม่ต้องฟิลเตอร์ข้อมูลใน ตาราง" (Don't filter data in the table)
+  /*
+  useEffect(() => {
+    if (selectedProjectId) {
+      const filtered = allReports.filter(report => report.projectId === selectedProjectId);
+      setDisplayedReports(filtered);
+    } else {
+      setDisplayedReports(allReports); // If no project selected, display all
+    }
+  }, [selectedProjectId, allReports]);
+  */
+
+  const handleProjectChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+    setSelectedProjectId(event.target.value as string);
+  };
 
   const handlePrintPdf = async () => {
     if (reportRef.current) {
       const canvas = await html2canvas(reportRef.current, {
-        // --- PDF SIZE OPTIMIZATION START ---
-        scale: 2, // Reduced scale from 2 to 1.5 for smaller file size. You can try 1 for even smaller.
+        scale: 2,
         useCORS: true,
         logging: true,
         backgroundColor: '#ffffff',
-        // --- PDF SIZE OPTIMIZATION END ---
       });
 
-      // --- PDF SIZE OPTIMIZATION START ---
-      // Convert to JPEG for compression, adjust quality (0.0 - 1.0)
-      const imgData = canvas.toDataURL('image/jpeg', 0.8); // Changed to JPEG with 80% quality
-      // --- PDF SIZE OPTIMIZATION END ---
+      const imgData = canvas.toDataURL('image/jpeg', 0.8);
 
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
+      const imgWidth = 210;
+      const pageHeight = 297;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
       let position = 0;
 
-      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight); // Changed to JPEG
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
       while (heightLeft >= 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight); // Changed to JPEG
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
 
-      // Ensure dayjs is used correctly for filename
       pdf.save(`Service_Reports_${dayjs().format('YYYYMMDD_HHmmss')}.pdf`);
     } else {
       console.error("[SelectedReportsPage] Report reference is null. Cannot generate PDF.");
@@ -154,7 +184,7 @@ export default function SelectedReportsPage() {
     );
   }
 
-  if (reports.length === 0) {
+  if (allReports.length === 0) {
     return (
       <Box sx={{ p: 4, textAlign: 'center' }}>
         <Typography variant="h6">No service reports found for the selected IDs.</Typography>
@@ -162,40 +192,56 @@ export default function SelectedReportsPage() {
     );
   }
 
-  // For the PrintableServiceReport, we need to pass the project associated with the FIRST report
-  // or handle multiple projects if the report spans across different projects.
-  // For simplicity, let's assume all selected reports belong to the same project or
-  // we'll use the project of the first report.
-  const firstReportProject = reports[0]?.projectId
-    ? projects.find(p => p.id === reports[0].projectId)
-    : undefined;
-  console.log("[SelectedReportsPage] Project for PrintableServiceReport:", firstReportProject);
-
+  // Find the project for the PrintableServiceReport based on selectedProjectId
+  // This ensures the PDF header reflects the chosen project from the combobox
+  const projectForPrintableReport = allProjects.find(p => p.id === selectedProjectId);
 
   return (
     <Box sx={{ p: 3 }}>
-      {/* Print Button */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<PrintIcon />}
-          onClick={handlePrintPdf}
-        >
-          พิมพ์รายงาน PDF
-        </Button>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h5" component="h1">
+          รายงาน Service Report ที่เลือก
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Project Combobox */}
+          <FormControl sx={{ minWidth: 200 }} size="small">
+            <InputLabel id="project-select-label">เลือกโปรเจกต์</InputLabel>
+            <Select
+              labelId="project-select-label"
+              id="project-select"
+              value={selectedProjectId}
+              label="เลือกโปรเจกต์"
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+            >
+              {/* If you want an "All" option for the combobox but not for filtering, you can re-add it here */}
+              {/* <MenuItem value=""><em>ทั้งหมด</em></MenuItem> */}
+              {allProjects.map((project) => (
+                <MenuItem key={project.id} value={project.id}>
+                  {project.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Print Button */}
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<PrintIcon />}
+            onClick={handlePrintPdf}
+          >
+            พิมพ์รายงาน PDF
+          </Button>
+        </Box>
       </Box>
 
       {/* Hidden component for PDF generation */}
       <div ref={reportRef} style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
-        {/* Pass all fetched reports and the project of the first report (or a common one) */}
-        <PrintableServiceReport reports={reports} project={firstReportProject || undefined} />
+        {/* Pass ALL fetched reports to PrintableServiceReport, but the project for its header comes from selectedProjectId */}
+        <PrintableServiceReport reports={allReports} project={projectForPrintableReport || undefined} />
       </div>
 
       {/* Display a simplified view of selected reports on screen (optional) */}
-      <Typography variant="h5" component="h1" gutterBottom>
-        รายงาน Service Report ที่เลือก
-      </Typography>
       <TableContainer component={Paper} sx={{ overflowX: 'auto', mb: 3 }}>
         <Table size="small">
           <TableHead>
@@ -210,9 +256,9 @@ export default function SelectedReportsPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {reports.map((reportItem) => {
-              const reportProject = projects.find(p => p.id === reportItem.projectId);
-              console.log(`[SelectedReportsPage] Display Table - Report ${reportItem.id}: Project ID is ${reportItem.projectId}. Found project:`, reportProject);
+            {/* Now mapping over allReports, not displayedReports */}
+            {allReports.map((reportItem) => {
+              const reportProject = allProjects.find(p => p.id === reportItem.projectId);
               return (
                 <TableRow key={reportItem.id}>
                   <TableCell>{reportItem.id}</TableCell>

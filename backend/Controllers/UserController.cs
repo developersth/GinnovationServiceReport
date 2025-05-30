@@ -27,8 +27,6 @@ namespace backend.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<User>> Get(string id)
         {
-                        // Check if a project with the same name already exists
-
             var user = await _userRepository.GetByIdAsync(id);
             if (user == null)
             {
@@ -37,34 +35,51 @@ namespace backend.Controllers
             return Ok(user);
         }
 
-
         [HttpPost]
         public async Task<ActionResult<User>> Create([FromBody] User user)
         {
-            user.Id = null;
+            user.Id = null; // Ensure ID is not set by client
 
-            var existingUser = await _userRepository.GetByNameAsync(user.Name);
-            if (existingUser != null)
+            if (await _userRepository.CheckUsernameExistsAsync(user.Username))
             {
-                return Conflict(new { message = "A project with this name already exists." });
+                return Conflict(new { message = "Username already exists. Please choose a different username." });
             }
+
+            if (await _userRepository.CheckEmailExistsAsync(user.Email))
+            {
+                return Conflict(new { message = "Email already registered. Please use a different email address." });
+            }
+
+            // Hash the password before saving
+            user.Password = HashPassword(user.Password);
 
             await _userRepository.CreateAsync(user);
             return CreatedAtAction(nameof(Get), new { id = user.Id }, user);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] User updatedUser)
+        public async Task<IActionResult> Update(string id, [FromBody] UserUpdateDto updatedUser)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             var existingUser = await _userRepository.GetByIdAsync(id);
             if (existingUser == null)
             {
                 return NotFound();
             }
 
-            updatedUser.Id = existingUser.Id;
+            existingUser.Username = updatedUser.Username;
+            existingUser.Name = updatedUser.Name;
+            existingUser.Email = updatedUser.Email;
+            existingUser.Role = updatedUser.Role;
 
-            await _userRepository.UpdateAsync(id, updatedUser);
+            if (!string.IsNullOrWhiteSpace(updatedUser.Password))
+            {
+                existingUser.Password = HashPassword(updatedUser.Password);
+            }
+
+            await _userRepository.UpdateAsync(id, existingUser);
             return NoContent();
         }
 
@@ -79,6 +94,12 @@ namespace backend.Controllers
 
             await _userRepository.DeleteAsync(id);
             return NoContent();
+        }
+
+        // Helper function to hash password
+        private string HashPassword(string plainPassword)
+        {
+            return BCrypt.Net.BCrypt.HashPassword(plainPassword);
         }
     }
 }

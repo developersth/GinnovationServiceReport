@@ -14,7 +14,9 @@ public interface IUserRepository
     Task CreateAsync(User user);
     Task UpdateAsync(string id, User user);
     Task DeleteAsync(string id);
-    Task<User?> GetByNameAsync(string name);
+    Task<User?> GetByUserNameAsync(string name);
+    Task<bool> CheckUsernameExistsAsync(string username);
+    Task<bool> CheckEmailExistsAsync(string email);
 }
 
 public class UserRepository : IUserRepository
@@ -34,24 +36,51 @@ public class UserRepository : IUserRepository
     public async Task<User?> GetByIdAsync(string id) =>
         await _collection.Find(r => r.Id == id).FirstOrDefaultAsync();
 
-    public async Task<User?> GetByNameAsync(string name)  =>
-         await _collection.Find(p => p.Name == name).FirstOrDefaultAsync();
+    public async Task<User?> GetByUserNameAsync(string name) =>
+         await _collection.Find(p => p.Username == name).FirstOrDefaultAsync();
 
     public async Task CreateAsync(User user)
     {
         // Hash the password before inserting
-        user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+        //user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
         await _collection.InsertOneAsync(user);
     }
-
     public async Task UpdateAsync(string id, User user)
     {
-        // Optionally re-hash password only if it's not already hashed
-        // This logic depends on how you handle password updates
-        user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
-        await _collection.ReplaceOneAsync(r => r.Id == id, user);
+        var existingUser = await _collection.Find(r => r.Id == id).FirstOrDefaultAsync();
+        if (existingUser == null)
+            throw new Exception("User not found");
+
+        // อัปเดตฟิลด์อื่น
+        existingUser.Username = user.Username;
+        existingUser.Name = user.Name;
+        existingUser.Email = user.Email;
+        existingUser.Role = user.Role;
+
+        // อัปเดตรหัสผ่านเฉพาะกรณีมีการส่งรหัสใหม่
+        if (!string.IsNullOrWhiteSpace(user.Password))
+        {
+            existingUser.Password = user.Password;
+            //existingUser.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+        }
+
+        await _collection.ReplaceOneAsync(r => r.Id == id, existingUser);
     }
 
     public async Task DeleteAsync(string id) =>
         await _collection.DeleteOneAsync(r => r.Id == id);
+
+    // NEW: Implement CheckUsernameExistsAsync
+    public async Task<bool> CheckUsernameExistsAsync(string username)
+    {
+        // Use Find and AnyAsync to efficiently check for existence
+        return await _collection.Find(u => u.Username == username).AnyAsync();
+    }
+
+    // NEW: Implement CheckEmailExistsAsync
+    public async Task<bool> CheckEmailExistsAsync(string email)
+    {
+        // Assuming your User model has an 'Email' property
+        return await _collection.Find(u => u.Email == email).AnyAsync();
+    }
 }

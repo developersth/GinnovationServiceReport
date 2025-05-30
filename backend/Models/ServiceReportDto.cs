@@ -19,6 +19,6 @@ namespace backend.Models
 
         // สำหรับเก็บชื่อไฟล์ / path รูปภาพหลายภาพ
         public List<string>? ImagePaths { get; set; }
-         public List<string>? RemainingImagePaths { get; set; } // 👈 เพิ่ม field นี้
+         public List<string>? ExistingImagePathsToKeep { get; set; }
     }
 }

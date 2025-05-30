@@ -8,12 +8,14 @@ import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Input from "@mui/material/Input";
-import InputLabel from "@mui/material/InputLabel";
-import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel"; // Ensure this is imported
+import FormControl from "@mui/material/FormControl"; // Ensure this is imported
+import Select from "@mui/material/Select"; // NEW: Import Select
+import MenuItem from "@mui/material/MenuItem"; // NEW: Import MenuItem
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import IconButton from "@mui/material/IconButton";
 import DeleteIcon from "@mui/icons-material/Delete";
-import InputAdornment from "@mui/material/InputAdornment"; // เพิ่ม InputAdornment
+import InputAdornment from "@mui/material/InputAdornment";
 import { Project } from "../../types";
 import { combineImageUrl, API_BASE_URL } from "../../lib/utils";
 
@@ -34,7 +36,8 @@ export default function ProjectForm({
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
-  const [imageFileName, setImageFileName] = useState<string>(""); // เพิ่ม state สำหรับชื่อไฟล์
+  const [imageFileName, setImageFileName] = useState<string>("");
+
   const [customerName, setCustomerName] = useState(
     initialData?.customerName || ""
   );
@@ -45,16 +48,21 @@ export default function ProjectForm({
     initialData?.contactPerson || ""
   );
   const [tel, setTel] = useState(initialData?.tel || "");
+  const [serviceUnder, setServiceUnder] = useState(initialData?.serviceUnder || "");
+
 
   useEffect(() => {
     if (initialData?.imageUrl) {
       setImagePreviewUrl(combineImageUrl(initialData.imageUrl));
       setSelectedFile(null);
-      setImageFileName(initialData.imageUrl.split("/").pop() || ""); // ดึงชื่อไฟล์จาก URL
+      setImageFileName(initialData.imageUrl.split("/").pop() || "");
     } else {
       setImagePreviewUrl(null);
       setSelectedFile(null);
       setImageFileName("");
+    }
+    if (initialData?.serviceUnder) {
+      setServiceUnder(initialData.serviceUnder);
     }
   }, [initialData]);
 
@@ -79,6 +87,7 @@ export default function ProjectForm({
         customerAddress,
         contactPerson,
         tel,
+        serviceUnder,
       };
       onSubmit(newProjectData);
     } else {
@@ -91,6 +100,7 @@ export default function ProjectForm({
         customerAddress,
         contactPerson,
         tel,
+        serviceUnder,
       };
       onSubmit(updatedProjectData);
     }
@@ -102,7 +112,7 @@ export default function ProjectForm({
       const url = URL.createObjectURL(file);
       setImagePreviewUrl(url);
       setSelectedFile(file);
-      setImageFileName(file.name); // เก็บชื่อไฟล์ที่เลือก
+      setImageFileName(file.name);
       event.target.value = "";
     }
   };
@@ -113,8 +123,18 @@ export default function ProjectForm({
     }
     setImagePreviewUrl(null);
     setSelectedFile(null);
-    setImageFileName(""); // ล้างชื่อไฟล์
+    setImageFileName("");
   };
+
+  // Define the options for the Service Under combobox
+  const serviceUnderOptions = [
+    "Under warranty",
+    "Out of warranty",
+    "Contract",
+    "Sales support",
+    "Commissioning",
+    "Project",
+  ];
 
   return (
     <Box
@@ -178,9 +198,30 @@ export default function ProjectForm({
         onChange={(e) => setTel(e.target.value)}
       />
 
-      {/* === ส่วน Image Upload ที่ปรับปรุงใหม่ === */}
+      {/* NEW: Service Under Combobox (Select) */}
       <FormControl fullWidth sx={{ m: 1 }}>
-        {/* ซ่อน Input จริงๆ */}
+        <InputLabel id="service-under-label">Service Under</InputLabel>
+        <Select
+          labelId="service-under-label"
+          id="service-under-select"
+          value={serviceUnder}
+          label="Service Under"
+          onChange={(e) => setServiceUnder(e.target.value as string)}
+        >
+          {/* Optional: Add an empty option for "None selected" or if it's not required */}
+          <MenuItem value="">
+            <em>None</em>
+          </MenuItem>
+          {serviceUnderOptions.map((option) => (
+            <MenuItem key={option} value={option}>
+              {option}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      {/* === ส่วน Image Upload === */}
+      <FormControl fullWidth sx={{ m: 1 }}>
         <Input
           id="project-image-upload-button"
           type="file"
@@ -192,14 +233,14 @@ export default function ProjectForm({
           label="รูปภาพโปรเจกต์"
           variant="outlined"
           fullWidth
-          value={imageFileName} // แสดงชื่อไฟล์ที่เลือก
+          value={imageFileName}
           InputProps={{
             readOnly: true,
             endAdornment: (
               <InputAdornment position="end">
                 <label htmlFor="project-image-upload-button">
                   <Button
-                    variant="contained" // ใช้ contained เพื่อให้ปุ่มเด่นขึ้น
+                    variant="contained"
                     component="span"
                     startIcon={<AttachFileIcon />}
                     sx={{ ml: 1 }}

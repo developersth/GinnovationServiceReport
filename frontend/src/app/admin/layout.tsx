@@ -13,25 +13,41 @@ import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
+import CircularProgress from '@mui/material/CircularProgress';
+import Image from 'next/image'; // Import the Image component
 
-import { logout, checkAuth } from '../lib/auth';
+import { logout, checkAuth, getUsername } from '../lib/api/auth';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State to manage sidebar visibility
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [currentUsername, setCurrentUsername] = useState<string | null>(null);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
   useEffect(() => {
-    setIsAuthenticated(checkAuth());
-    if (!checkAuth()) {
-      router.push('/login');
-    }
+    const authenticateUser = async () => {
+      setIsLoadingAuth(true);
+      const authStatus = checkAuth();
+
+      if (authStatus) {
+        setIsAuthenticated(true);
+        setCurrentUsername(getUsername());
+      } else {
+        setIsAuthenticated(false);
+        router.push('/login');
+      }
+      setIsLoadingAuth(false);
+    };
+
+    authenticateUser();
   }, [router]);
 
   const handleLogout = async () => {
     try {
       await logout();
       setIsAuthenticated(false);
+      setCurrentUsername(null);
       router.push('/login');
     } catch (error) {
       console.error('Logout failed:', error);
@@ -42,62 +58,77 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  if (!isAuthenticated) {
+  if (isLoadingAuth) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
-        <p>Loading or redirecting to login...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+        <CircularProgress color="primary" sx={{ mb: 2 }} />
+        <p>กำลังตรวจสอบสถานะการเข้าสู่ระบบ...</p>
+        <p>หากไม่ถูกต้องจะเปลี่ยนเส้นทางไปหน้าเข้าสู่ระบบ</p>
       </div>
     );
+  }
+
+  if (!isAuthenticated && !isLoadingAuth) {
+    return null;
   }
 
   return (
     <MUIThemeProvider>
       <div className="flex min-h-screen">
-        {/* Mobile Overlay for Sidebar */}
+        {/* Mobile Overlay for Sidebar - Hidden during print */}
         {isSidebarOpen && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden print:hidden"
             onClick={toggleSidebar}
           ></div>
         )}
 
-        {/* Sidebar */}
+        {/* Sidebar - Hidden during print */}
         <aside
           className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-800 p-4 space-y-4 text-white
                       transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
                       md:relative md:translate-x-0 md:flex-shrink-0 md:block
-                      transition-transform duration-300 ease-in-out`}
+                      transition-transform duration-300 ease-in-out
+                      print:hidden`}
         >
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold">Ginnovation</h2>
-            {/* Close button for mobile sidebar: visible only on xs, hidden on md and up */}
+            {/* --- Start of Logo Integration --- */}
+            <Link href="/admin/dashboard"> {/* Make the logo clickable to go to dashboard */}
+              <Image
+                src="/images/g-logo.png" // **Adjust this path to your logo file**
+                alt="Your Company Logo"
+                width={120} // **Adjust width as needed**
+                height={40} // **Adjust height as needed**
+                priority // Optional: prioritizes loading this image
+              />
+            </Link>
+            {/* --- End of Logo Integration --- */}
+
             <IconButton
               onClick={toggleSidebar}
-              sx={{ display: { xs: 'block', md: 'none' } }} // Explicitly hide on md and up using MUI sx prop
-              className="text-white" // Keep text-white for mobile
+              sx={{ display: { xs: 'block', md: 'none' } }}
+              className="text-white"
               aria-label="close sidebar"
             >
               <CloseIcon />
             </IconButton>
           </div>
           <nav className="space-y-2">
-            <Link href="/admin/dashboard" className="block hover:text-blue-400" onClick={toggleSidebar}>🏠 Dashboard</Link>
-            <Link href="/admin/reports" className="block hover:text-blue-400" onClick={toggleSidebar}>📑 Reports</Link>
-            <Link href="/admin/users" className="block hover:text-blue-400" onClick={toggleSidebar}>👥 Users</Link>
-            <Link href="/admin/projects" className="block hover:text-blue-400" onClick={toggleSidebar}>📊 Projects</Link>
-            <Link href="/admin/services" className="block hover:text-blue-400" onClick={toggleSidebar}>🛠️ Service Reports</Link>
+            <Link href="/admin/dashboard" className="block hover:text-blue-400" onClick={toggleSidebar}>🏠 แดชบอร์ด</Link>
+            <Link href="/admin/users" className="block hover:text-blue-400" onClick={toggleSidebar}>👥 ผู้ใช้งาน</Link>
+            <Link href="/admin/projects" className="block hover:text-blue-400" onClick={toggleSidebar}>📊 โปรเจกต์</Link>
+            <Link href="/admin/services" className="block hover:text-blue-400" onClick={toggleSidebar}>🛠️ รายงานบริการ</Link>
           </nav>
         </aside>
 
         {/* Content Area */}
         <div className="flex-1 flex flex-col">
-          {/* Topbar */}
-          <header className="flex justify-end items-center p-4 bg-white dark:bg-gray-700 shadow-md md:justify-end">
-            {/* Hamburger menu: visible only on xs (mobile), hidden on md and up */}
+          {/* Topbar - Hidden during print */}
+          <header className="flex justify-end items-center p-4 bg-white dark:bg-gray-700 shadow-md md:justify-end print:hidden">
             <Box sx={{ display: { xs: 'block', md: 'none' } }} className="mr-auto">
               <IconButton
                 onClick={toggleSidebar}
-                color="inherit" // Use inherit to match theme text color
+                color="inherit"
                 aria-label="open sidebar"
               >
                 <MenuIcon />
@@ -117,7 +148,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                   },
                 }}
               >
-                Admin
+                {currentUsername || 'ผู้ใช้งาน'}
               </Button>
               <Button
                 variant="contained"
@@ -125,7 +156,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 startIcon={<LogoutIcon />}
                 onClick={handleLogout}
               >
-                Logout
+                ออกจากระบบ
               </Button>
             </div>
           </header>

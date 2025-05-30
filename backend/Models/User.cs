@@ -16,6 +16,10 @@ namespace backend.Models
 
         [Required]
         [MaxLength(100)]
+        public string Username { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(200)]
         public string Name { get; set; } = string.Empty;
 
         [Required]
@@ -25,7 +29,6 @@ namespace backend.Models
         [Required]
         public string Role { get; set; } = "viewer"; // e.g., "admin", "editor", "viewer"
 
-        [Required]
         [MinLength(6, ErrorMessage = "Password must be at least 6 characters long.")]
         public string Password { get; set; } = string.Empty; // Store hashed password here
     }

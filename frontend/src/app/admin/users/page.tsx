@@ -14,7 +14,7 @@ import Snackbar from '@mui/material/Snackbar';
 
 import UserTable from '../../components/user/UserTable'
 import UserForm from '../../components/user/UserForm';
-import { getUsers, addUser, updateUser, deleteUser } from '../../lib/data'; // Import user data functions
+import { getUsers, addUser, updateUser, deleteUser } from '../../lib/api/data'; // Import user data functions
 import { User } from '../../types';
 
 function Alert(props: AlertProps) {

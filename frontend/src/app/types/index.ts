@@ -4,19 +4,22 @@ export interface Project {
   id: string;
   name: string;
   imageUrl: string;
-  imageFile?: File;
+  imageFile?: File; // This remains optional
 
   customerName: string;
   customerAddress: string;
   contactPerson: string;
   tel: string;
+  serviceUnder: string; // Changed from 'serviceUnder?: 'Contract';' to 'serviceUnder: string;'
 }
 
 export interface User {
   id: string;
+  username:string;
   name: string;
   email: string;
   role: 'admin' | 'editor' | 'viewer';
+  password:string;
 }
 
 export interface ServiceReport {

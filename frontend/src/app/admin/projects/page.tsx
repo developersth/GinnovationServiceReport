@@ -16,7 +16,7 @@ import Snackbar from '@mui/material/Snackbar'; // สำหรับแสดง
 
 import ProjectTable from '../../components/project/ProjectTable';
 import ProjectForm from '../../components/project/ProjectForm';
-import { getProjects, addProject, updateProject, deleteProject } from '../../lib/data'; // Import data functions
+import { getProjects, addProject, updateProject, deleteProject } from '../../lib/api/data'; // Import data functions
 import { Project } from '../../types';
 
 function Alert(props: AlertProps) {

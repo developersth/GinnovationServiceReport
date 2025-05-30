@@ -13,7 +13,7 @@ import FormControl from '@mui/material/FormControl';
 import Avatar from '@mui/material/Avatar';
 import ListItemText from '@mui/material/ListItemText';
 import { ServiceReport, Project } from '../../types';
-import { getProjects } from '../../lib/data';
+// import { getProjects } from '../../lib/api/data'; // No longer needed directly here
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -27,7 +27,16 @@ import InputAdornment from '@mui/material/InputAdornment';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
-import Chip from '@mui/material/Chip'; // Import Chip component
+import Chip from '@mui/material/Chip';
+import { getUsername } from '@/app/lib/api/auth';
+
+// Assuming you have a User type or interface in your project, e.g., in types.ts
+// If not, you might define a simple one like this:
+interface CurrentUser {
+  username: string;
+  name: string; // The name you want to display for createdBy/updatedBy
+  // ... any other user properties
+}
 
 interface ServiceReportFormProps {
   initialData?: ServiceReport;
@@ -99,7 +108,7 @@ export default function ServiceReportForm({ initialData, onSubmit, onCancel, pro
 
     const newFilesToUpload = imagePreviews.filter(item => item.isNew).map(item => item.file!);
     const existingImagePaths = imagePreviews.filter(item => !item.isNew).map(item => item.id);
-
+    const username = getUsername() ?? '';
     const reportData: Omit<ServiceReport, 'id'> | ServiceReport = {
       projectId,
       reportedBy,
@@ -110,10 +119,13 @@ export default function ServiceReportForm({ initialData, onSubmit, onCancel, pro
       imagePaths: [...existingImagePaths, ...newFilesToUpload],
       reportDate: reportDate ? reportDate.format('YYYY-MM-DD') : '',
       status,
-      createdBy: initialData?.createdBy || '', // Assuming createdBy is not required for new reports
-      createdAt: initialData?.createdAt || new Date().toISOString(), // Use current date for new reports  
-      updatedBy: initialData?.updatedBy || '', // Assuming updatedBy is not required for new reports
-      updatedAt: new Date().toISOString(), // Use current date for updates
+      // Assign currentUser.name to createdBy for new reports,
+      // otherwise retain existing createdBy.
+      createdBy: username,
+      createdAt: initialData?.createdAt || new Date().toISOString(),
+      // Always update updatedBy to currentUser.name
+      updatedBy: username,
+      updatedAt: new Date().toISOString(),
     };
 
     onSubmit(initialData ? { ...initialData, ...reportData } : reportData);
@@ -338,6 +350,25 @@ export default function ServiceReportForm({ initialData, onSubmit, onCancel, pro
             ))}
           </Select>
         </FormControl>
+
+        {/* Display createdBy and createdAt if initialData exists (for existing reports) */}
+        {initialData && (
+            <Box sx={{ m: 1, mt: 3, p: 2, border: '1px solid #eee', borderRadius: '4px', backgroundColor: '#f9f9f9' }}>
+                <Typography variant="body2" color="text.secondary">
+                    **สร้างโดย:** {initialData.createdBy || 'ไม่ระบุ'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                    **สร้างเมื่อ:** {initialData.createdAt ? dayjs(initialData.createdAt).format('DD/MM/YYYY HH:mm') : 'ไม่ระบุ'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    **อัปเดตโดย:** {initialData.updatedBy || 'ไม่ระบุ'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                    **อัปเดตเมื่อ:** {initialData.updatedAt ? dayjs(initialData.updatedAt).format('DD/MM/YYYY HH:mm') : 'ไม่ระบุ'}
+                </Typography>
+            </Box>
+        )}
+
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
           <Button variant="outlined" onClick={onCancel}>
             ยกเลิก

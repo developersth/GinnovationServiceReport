@@ -26,6 +26,60 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+/* src/app/globals.css */
+
+/* Other global styles */
+
+@media print {
+  /* Hide elements that should not be printed */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Adjust body or main container styles for printing */
+  body {
+    margin: 0;
+    padding: 0;
+    /* You might want to unset background colors or shadows */
+    background-color: #fff !important;
+    color: #000 !important;
+  }
+
+  /* Target the main report container for specific print styles */
+  .max-w-4xl.mx-auto {
+    width: 100% !important; /* Make it full width for print */
+    max-width: none !important; /* Remove max-width restriction */
+    margin: 0 !important; /* Remove auto margins */
+    box-shadow: none !important; /* Remove shadow for print */
+    border: none !important; /* Remove border if desired */
+    padding: 0.5in !important; /* Set print-friendly padding */
+  }
+
+  /* Force elements to be displayed */
+  .print\:block {
+    display: block !important;
+  }
+
+  /* Control page breaks */
+  .page-break-after {
+    page-break-after: always;
+  }
+  .page-break-before {
+    page-break-before: always;
+  }
+  .no-break {
+    page-break-inside: avoid;
+  }
+
+  /* Example: ensure tables fit */
+  table {
+    width: 100% !important;
+    table-layout: fixed; /* helps with column widths */
+  }
+  th, td {
+    white-space: normal; /* Allow text to wrap */
+  }
+}
 /* กำหนด font ที่จะใช้สำหรับ Body */
 
 /* คุณอาจจะลบสไตล์อื่นๆ ที่เกี่ยวข้องกับ Tailwind ออกไป */

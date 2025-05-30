@@ -61,7 +61,8 @@ namespace backend.Controllers
                 CustomerName = dto.CustomerName,
                 CustomerAddress = dto.CustomerAddress,
                 ContactPerson = dto.ContactPerson,
-                Tel = dto.Tel
+                Tel = dto.Tel,
+                ServiceUnder =dto.ServiceUnder
             };
 
             await _repository.CreateAsync(project);
@@ -109,6 +110,7 @@ namespace backend.Controllers
             existing.CustomerAddress = dto.CustomerAddress;
             existing.ContactPerson = dto.ContactPerson;
             existing.Tel = dto.Tel;
+            existing.ServiceUnder = dto.ServiceUnder;
 
             await _repository.UpdateAsync(id, existing);
             return NoContent();

@@ -27,5 +27,7 @@ namespace backend.Models
 
         [MaxLength(20)]
         public string Tel { get; set; } = string.Empty;
+        [MaxLength(50)] // You can adjust the max length as needed
+        public string? ServiceUnder { get; set; } = string.Empty;
     }
 }
