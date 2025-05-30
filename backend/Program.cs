@@ -12,7 +12,7 @@ builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 
 
 // CORS Setup
-var MyAllowSpecificOrigins = "https://localhost:7001,http://backend:5000,*";
+var MyAllowSpecificOrigins = "https://localhost:7001,http://backend:5000,http://localhost/gapi,http://codegenius.trueddns.com:16457,*";
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: MyAllowSpecificOrigins,
