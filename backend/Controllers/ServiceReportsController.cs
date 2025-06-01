@@ -103,8 +103,6 @@ public class ServiceReportController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = serviceReport.Id }, serviceReport);
     }
 
-
-
     [HttpPut("{id:length(24)}")]
     public async Task<IActionResult> UpdateWithImages(
         string id,
