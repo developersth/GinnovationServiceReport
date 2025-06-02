@@ -5,6 +5,7 @@ import MuiGrid from '@mui/material/Grid'; // Alias Grid as MuiGrid to avoid pote
 import { ServiceReport, Project } from '../../types'; // Assuming types are here
 import { combineImageUrl, formatDate } from '../../lib/utils'; // Re-use utilities
 
+
 interface ServiceReportDetailProps {
   report: ServiceReport;
   project?: Project; // Project data is passed directly from the parent fetching component

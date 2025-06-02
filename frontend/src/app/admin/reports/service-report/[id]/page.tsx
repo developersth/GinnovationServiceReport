@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ServiceReport, Project } from '../../../../types';
 import { getServiceReportById, getProjects } from '../../../../lib/api/data';
+import { getName } from '../../../../lib/api/auth'; // Import the getName function
 
 import dayjs from 'dayjs';
 import 'dayjs/locale/th';
@@ -19,7 +20,7 @@ interface DisplayServiceReport {
     contactPerson: string;
     contactTel: string;
     serviceUnder: string;
-    reportedBy: string;
+    reportedBy: string; // Keep this in type for potential fallback or other uses
     channel: string;
     statusOfWork: 'Completed' | 'Follow-up' | 'N/A';
 
@@ -70,6 +71,14 @@ export default function SingleReportPage() {
     const [displayReport, setDisplayReport] = useState<DisplayServiceReport | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    // State to hold the reporter's name from local storage
+    const [reporterName, setReporterName] = useState<string | null>(null);
+
+    useEffect(() => {
+        // Get the name from localStorage when the component mounts
+        setReporterName(getName());
+    }, []); // Empty dependency array means this runs once on mount
+
 
     useEffect(() => {
         if (!id || typeof id !== 'string') {
@@ -98,7 +107,7 @@ export default function SingleReportPage() {
                     contactTel: relatedProject?.tel || 'N/A',
                     serviceUnder: relatedProject?.serviceUnder || 'N/A',
 
-                    reportedBy: backendServiceReport.reportedBy || 'N/A',
+                    reportedBy: backendServiceReport.reportedBy || 'N/A', // Still keep this, but will use `reporterName` for display
                     channel: backendServiceReport.channel || 'N/A',
                     statusOfWork: backendServiceReport.status === 'Complete' ? 'Completed' : 'Follow-up',
 
@@ -243,7 +252,8 @@ export default function SingleReportPage() {
                 {/* Report Details Table */}
                 <div className="mb-6 border border-black text-sm">
                     <div className="grid grid-cols-4 bg-gray-100 font-semibold text-center border-b border-black">
-                        <div className="p-1.5 border-r border-black">วันที่</div>
+                        
+                        <div className="p-1.5 border-r border-black"> วันที่</div>
                         <div className="p-1.5 border-r border-black">รายละเอียดที่แจ้ง</div>
                         <div className="p-1.5 border-r border-black">สาเหตุของปัญหา</div>
                         <div className="p-1.5">การแก้ไข/ดำเนินการ</div>
@@ -291,7 +301,9 @@ export default function SingleReportPage() {
                     <div className="border border-black">
                         <div className="grid grid-cols-3 border-b border-black">
                             <div className="col-span-1 p-1.5 bg-gray-100 border-r border-black font-semibold">Report by</div>
-                            <div className="col-span-2 p-1.5 break-words whitespace-pre-wrap">{displayReport.reportedBy}</div>
+                            <div className="col-span-2 p-1.5 break-words whitespace-pre-wrap">
+                                {reporterName || 'N/A'} {/* Use the state variable here */}
+                            </div>
                         </div>
                         <div className="grid grid-cols-3 border-b border-black">
                             <div className="col-span-1 p-1.5 bg-gray-100 border-r border-black font-semibold">Date</div>

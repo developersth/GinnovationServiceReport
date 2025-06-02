@@ -271,95 +271,134 @@ export default function ServiceReportsPage() {
     );
   }
 
-  return (
-    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="th">
-      <Box sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-          <Typography variant="h4" component="h1">
-            การจัดการรายงานบริการ
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleOpenAddForm}
-              startIcon={<AddIcon />}
-            >
-              เพิ่มรายงานบริการ
-            </Button>
-            <Button
-              variant="contained"
-              color="secondary"
-              onClick={handleGenerateReport}
-              startIcon={<DescriptionIcon />}
-              disabled={selectedReportIds.length === 0}
-            >
-              สร้างรายงาน
-            </Button>
-          </Box>
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Typography variant="subtitle1">กรองตามวันที่:</Typography>
-          <DatePicker
-            label="วันที่เริ่มต้น"
-            value={selectedStartDate}
-            onChange={(newValue) => setSelectedStartDate(newValue)}
-            format="DD/MM/YYYY"
-            slotProps={{ textField: { size: 'small', sx: { width: '180px' } } }}
-          />
-          <DatePicker
-            label="วันที่สิ้นสุด"
-            value={selectedEndDate}
-            onChange={(newValue) => setSelectedEndDate(newValue)}
-            format="DD/MM/YYYY"
-            slotProps={{ textField: { size: 'small', sx: { width: '180px' } } }}
-          />
+return (
+  <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="th">
+    <Box sx={{ p: 3 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: 2,
+          mb: 4,
+        }}
+      >
+        <Typography variant="h4" component="h1">
+          การจัดการรายงานบริการ
+        </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 1,
+            width: { xs: '100%', sm: 'auto' },
+          }}
+        >
           <Button
+            fullWidth
             variant="contained"
             color="primary"
-            onClick={handleSearch}
-            sx={{ height: '40px' }}
+            onClick={handleOpenAddForm}
+            startIcon={<AddIcon />}
           >
-            ค้นหา
+            เพิ่มรายงานบริการ
           </Button>
           <Button
-            variant="outlined"
-            onClick={handleClearFilter}
-            sx={{ height: '40px' }}
+            fullWidth
+            variant="contained"
+            color="secondary"
+            onClick={handleGenerateReport}
+            startIcon={<DescriptionIcon />}
+            disabled={selectedReportIds.length === 0}
           >
-            ล้างตัวกรอง
+            สร้างรายงาน
           </Button>
         </Box>
-
-        <ServiceReportTable
-          reports={filteredReports}
-          projects={projects}
-          onEdit={handleEditReport}
-          onDelete={handleDeleteReport}
-          selectedReportIds={selectedReportIds}
-          onSelectReport={handleReportSelection}
-          onSelectAllReports={handleSelectAllReports}
-        />
-
-        <Dialog open={openFormModal} onClose={handleCloseFormModal} maxWidth="md" fullWidth>
-          <DialogContent>
-            {/* Removed currentUser prop, ServiceReportForm needs adjustment if it relied on it */}
-            <ServiceReportForm
-              initialData={editingReport}
-              onSubmit={handleFormSubmit}
-              onCancel={handleCloseFormModal}
-              projects={projects}
-            />
-          </DialogContent>
-        </Dialog>
-
-        <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleSnackbarClose}>
-          <Alert onClose={handleSnackbarClose} severity={snackbarSeverity}>
-            {snackbarMessage}
-          </Alert>
-        </Snackbar>
       </Box>
-    </LocalizationProvider>
-  );
+
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 2,
+          mb: 3,
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          flexDirection: { xs: 'column', sm: 'row' },
+        }}
+      >
+        <Typography variant="subtitle1" sx={{ width: { xs: '100%', sm: 'auto' } }}>
+          กรองตามวันที่:
+        </Typography>
+        <DatePicker
+          label="วันที่เริ่มต้น"
+          value={selectedStartDate}
+          onChange={(newValue) => setSelectedStartDate(newValue)}
+          format="DD/MM/YYYY"
+          slotProps={{
+            textField: {
+              size: 'small',
+              sx: { width: { xs: '100%', sm: '180px' } },
+            },
+          }}
+        />
+        <DatePicker
+          label="วันที่สิ้นสุด"
+          value={selectedEndDate}
+          onChange={(newValue) => setSelectedEndDate(newValue)}
+          format="DD/MM/YYYY"
+          slotProps={{
+            textField: {
+              size: 'small',
+              sx: { width: { xs: '100%', sm: '180px' } },
+            },
+          }}
+        />
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleSearch}
+          sx={{ height: '40px', width: { xs: '100%', sm: 'auto' } }}
+        >
+          ค้นหา
+        </Button>
+        <Button
+          variant="outlined"
+          onClick={handleClearFilter}
+          sx={{ height: '40px', width: { xs: '100%', sm: 'auto' } }}
+        >
+          ล้างตัวกรอง
+        </Button>
+      </Box>
+
+      <ServiceReportTable
+        reports={filteredReports}
+        projects={projects}
+        onEdit={handleEditReport}
+        onDelete={handleDeleteReport}
+        selectedReportIds={selectedReportIds}
+        onSelectReport={handleReportSelection}
+        onSelectAllReports={handleSelectAllReports}
+      />
+
+      <Dialog open={openFormModal} onClose={handleCloseFormModal} maxWidth="md" fullWidth>
+        <DialogContent sx={{ px: { xs: 1, sm: 3 } }}>
+          <ServiceReportForm
+            initialData={editingReport}
+            onSubmit={handleFormSubmit}
+            onCancel={handleCloseFormModal}
+            projects={projects}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleSnackbarClose}>
+        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+    </Box>
+  </LocalizationProvider>
+);
+
 }

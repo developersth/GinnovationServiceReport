@@ -14,7 +14,7 @@ import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import CircularProgress from '@mui/material/CircularProgress';
-import Image from 'next/image'; // Import the Image component
+import Image from 'next/image';
 
 import { logout, checkAuth, getUsername } from '../lib/api/auth';
 
@@ -74,8 +74,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   return (
     <MUIThemeProvider>
-      <div className="flex min-h-screen">
-        {/* Mobile Overlay for Sidebar - Hidden during print */}
+      <div className="flex min-h-screen" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        {/* Overlay for Mobile Sidebar */}
         {isSidebarOpen && (
           <div
             className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden print:hidden"
@@ -83,27 +83,24 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           ></div>
         )}
 
-        {/* Sidebar - Hidden during print */}
+        {/* Sidebar */}
         <aside
-          className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-800 p-4 space-y-4 text-white
+          className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-800 p-4 space-y-4 text-white shadow-lg
                       transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
                       md:relative md:translate-x-0 md:flex-shrink-0 md:block
                       transition-transform duration-300 ease-in-out
                       print:hidden`}
         >
           <div className="flex justify-between items-center mb-6">
-            {/* --- Start of Logo Integration --- */}
-            <Link href="/admin/dashboard"> {/* Make the logo clickable to go to dashboard */}
+            <Link href="/admin/dashboard">
               <Image
-                src="/images/g-logo.png" // **Adjust this path to your logo file**
+                src="/images/g-logo.png"
                 alt="Your Company Logo"
-                width={120} // **Adjust width as needed**
-                height={40} // **Adjust height as needed**
-                priority // Optional: prioritizes loading this image
+                width={120}
+                height={40}
+                priority
               />
             </Link>
-            {/* --- End of Logo Integration --- */}
-
             <IconButton
               onClick={toggleSidebar}
               sx={{ display: { xs: 'block', md: 'none' } }}
@@ -121,11 +118,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </nav>
         </aside>
 
-        {/* Content Area */}
+        {/* Main Content Area */}
         <div className="flex-1 flex flex-col">
-          {/* Topbar - Hidden during print */}
+          {/* Topbar */}
           <header className="flex justify-end items-center p-4 bg-white dark:bg-gray-700 shadow-md md:justify-end print:hidden">
-            <Box sx={{ display: { xs: 'block', md: 'none' } }} className="mr-auto">
+            <Box sx={{ display: { xs: 'block', md: 'none' } }} className="mr-auto z-50">
               <IconButton
                 onClick={toggleSidebar}
                 color="inherit"
@@ -161,8 +158,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </div>
           </header>
 
-          {/* Main Content */}
-          <main className="flex-1 p-6">
+          {/* Content */}
+          <main className="flex-1 p-6 overflow-y-auto">
             {children}
           </main>
         </div>

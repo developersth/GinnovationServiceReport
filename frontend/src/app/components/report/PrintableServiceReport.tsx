@@ -65,8 +65,8 @@ const PrintableServiceReport: React.FC<PrintableServiceReportProps> = ({ reports
       </Box>
 
       {/* Customer Info */}
-      <TableContainer component={Box} sx={{ mb: 3, border: '1px solid #ccc' }}>
-        <Table size="small" sx={{ '& td, & th': { border: '1px solid #ccc', p: 0.5 } }}>
+      <TableContainer component={Box} sx={{ mb: 3, border: '1px solid black' }}>
+        <Table size="small" sx={{ '& td, & th': { border: '1px solid black', p: 0.5 } }}>
           <TableBody>
             {[
               ['Project', projectName],
@@ -86,8 +86,8 @@ const PrintableServiceReport: React.FC<PrintableServiceReportProps> = ({ reports
       </TableContainer>
 
       {/* Main Report */}
-      <TableContainer component={Box} sx={{ mb: 3, border: '1px solid #ccc' }}>
-        <Table size="small" sx={{ '& td, & th': { border: '1px solid #ccc', p: 0.5, verticalAlign: 'top' } }}>
+      <TableContainer component={Box} sx={{ mb: 3, border: '1px solid black' }}>
+        <Table size="small" sx={{ '& td, & th': { border: '1px solid black', p: 0.5, verticalAlign: 'top' } }}>
           <TableHead>
             <TableRow sx={{ bgcolor: '#f0f0f0' }}>
               <TableCell sx={{ fontWeight: 'bold', width: '10%', whiteSpace: 'nowrap' }}>วันที่</TableCell>
@@ -119,8 +119,8 @@ const PrintableServiceReport: React.FC<PrintableServiceReportProps> = ({ reports
           </Box>
         </Grid>
         <Grid item xs={8}>
-          <TableContainer component={Box} sx={{ border: '1px solid #ccc' }}>
-            <Table size="small" sx={{ '& td, & th': { border: '1px solid #ccc', p: 0.5 } }}>
+          <TableContainer component={Box} sx={{ border: '1px solid black' }}>
+            <Table size="small" sx={{ '& td, & th': { border: '1px solid black', p: 0.5 } }}>
               <TableBody>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 'bold', width: '30%' }}>Report by</TableCell>
@@ -148,8 +148,8 @@ const PrintableServiceReport: React.FC<PrintableServiceReportProps> = ({ reports
 
       {/* Staff Time */}
       <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 1 }}>Service staff and working time</Typography>
-      <TableContainer component={Box} sx={{ mb: 3, border: '1px solid #ccc' }}>
-        <Table size="small" sx={{ '& td, & th': { border: '1px solid #ccc', p: 0.5, verticalAlign: 'top' } }}>
+      <TableContainer component={Box} sx={{ mb: 3, border: '1px solid black' }}>
+        <Table size="small" sx={{ '& td, & th': { border: '1px solid black', p: 0.5, verticalAlign: 'top' } }}>
           <TableHead>
             <TableRow sx={{ bgcolor: '#f0f0f0' }}>
               <TableCell sx={{ fontWeight: 'bold' }}>Engineer name</TableCell>

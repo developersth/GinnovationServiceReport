@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation'; // Import useRouter
 import {
   Box,
   Typography,
@@ -21,6 +21,7 @@ import {
   MenuItem
 } from '@mui/material';
 import PrintIcon from '@mui/icons-material/Print';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // Import the back arrow icon
 import PrintableServiceReport from '../../../components/report/PrintableServiceReport';
 import { getServiceReportById, getProjectById, getProjects } from '../../../lib/api/data';
 import { ServiceReport, Project } from '../../../types';
@@ -38,10 +39,10 @@ function formatDate(dateString: string | Date | undefined): string {
 
 export default function SelectedReportsPage() {
   const searchParams = useSearchParams();
+  const router = useRouter(); // Initialize useRouter
   const reportIdsParam = searchParams.get('ids');
 
   const [allReports, setAllReports] = useState<ServiceReport[]>([]); // Store all fetched reports
-  // const [displayedReports, setDisplayedReports] = useState<ServiceReport[]>([]); // This state is no longer needed for filtering the table
   const [allProjects, setAllProjects] = useState<Project[]>([]); // Store all projects for the combobox
   const [selectedProjectId, setSelectedProjectId] = useState<string>(''); // State for selected project in combobox
   const [loading, setLoading] = useState(true);
@@ -96,7 +97,6 @@ export default function SelectedReportsPage() {
           }
         }
         setAllReports(fetchedReports); // Store all reports
-        // setDisplayedReports(fetchedReports); // No longer needed for initial display of filtered reports
         // If there's a specific project ID in the first report, pre-select it
         if (fetchedReports.length > 0 && fetchedReports[0].projectId) {
           setSelectedProjectId(fetchedReports[0].projectId);
@@ -115,19 +115,6 @@ export default function SelectedReportsPage() {
 
     fetchData();
   }, [reportIdsParam]);
-
-  // REMOVED: Effect to filter reports when selectedProjectId or allReports changes
-  // You explicitly said "ไม่ต้องฟิลเตอร์ข้อมูลใน ตาราง" (Don't filter data in the table)
-  /*
-  useEffect(() => {
-    if (selectedProjectId) {
-      const filtered = allReports.filter(report => report.projectId === selectedProjectId);
-      setDisplayedReports(filtered);
-    } else {
-      setDisplayedReports(allReports); // If no project selected, display all
-    }
-  }, [selectedProjectId, allReports]);
-  */
 
   const handleProjectChange = (event: React.ChangeEvent<{ value: unknown }>) => {
     setSelectedProjectId(event.target.value as string);
@@ -167,6 +154,10 @@ export default function SelectedReportsPage() {
     }
   };
 
+  const handleBackClick = () => {
+    router.back(); // Go back to the previous page
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
@@ -203,6 +194,16 @@ export default function SelectedReportsPage() {
           รายงาน Service Report ที่เลือก
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Back Button */}
+          <Button
+            variant="outlined"
+            color="secondary"
+            startIcon={<ArrowBackIcon />}
+            onClick={handleBackClick}
+          >
+            ย้อนกลับ
+          </Button>
+
           {/* Project Combobox */}
           <FormControl sx={{ minWidth: 200 }} size="small">
             <InputLabel id="project-select-label">เลือกโปรเจกต์</InputLabel>
@@ -213,8 +214,6 @@ export default function SelectedReportsPage() {
               label="เลือกโปรเจกต์"
               onChange={(e) => setSelectedProjectId(e.target.value)}
             >
-              {/* If you want an "All" option for the combobox but not for filtering, you can re-add it here */}
-              {/* <MenuItem value=""><em>ทั้งหมด</em></MenuItem> */}
               {allProjects.map((project) => (
                 <MenuItem key={project.id} value={project.id}>
                   {project.name}

@@ -1,0 +1,43 @@
+2. Install pm2-windows-startup
+PM2 doesn’t support pm2 startup on Windows directly. Instead, use this community-supported module:
+
+bash
+คัดลอก
+แก้ไข
+npm install -g pm2-windows-startup
+Then install the startup service:
+
+bash
+คัดลอก
+แก้ไข
+pm2-startup install
+🛠 This creates a Windows service that launches PM2 automatically when the machine boots.
+
+3. Save the Running Processes
+bash
+คัดลอก
+แก้ไข
+pm2 save
+This saves your current process list so it can be restored on reboot.
+
+4. (Optional) Customize the Startup User
+By default, the PM2 Windows service runs under the LOCAL SYSTEM user. If you want it to run as your current user:
+
+bash
+คัดลอก
+แก้ไข
+pm2-startup install [your-username]
+5. Reboot and Test
+Restart the server:
+
+bash
+คัดลอก
+แก้ไข
+shutdown /r /t 0
+After reboot, check if your app is running:
+
+bash
+คัดลอก
+แก้ไข
+pm2 list
+pm2 logs
