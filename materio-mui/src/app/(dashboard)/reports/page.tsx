@@ -29,9 +29,15 @@ import 'dayjs/locale/th'
 dayjs.extend(isSameOrBefore)
 dayjs.extend(isSameOrAfter)
 
-import type { ServiceReport, Project } from '@/types'
+import FormControl from '@mui/material/FormControl'
 
-// REMOVED: import { checkAuth } from '@/libs/api/auth'
+import InputLabel from '@mui/material/InputLabel'
+
+import Select from '@mui/material/Select'
+
+import MenuItem from '@mui/material/MenuItem'
+
+import type { ServiceReport, Project } from '@/types'
 
 import {
   getServiceReports,
@@ -44,6 +50,8 @@ import {
 import ServiceReportTable from '@views/service-report/ServiceReportTable'
 import ServiceReportForm from '@views/service-report/ServiceReportForm'
 
+// NEW IMPORTS FOR PROJECT FILTER
+
 function Alert(props: AlertProps) {
   return <MuiAlert elevation={6} variant='filled' {...props} />
 }
@@ -52,19 +60,22 @@ export default function ServiceReportsPage() {
   const router = useRouter()
   const [reports, setReports] = useState<ServiceReport[]>([])
   const [projects, setProjects] = useState<Project[]>([])
-  const [loading, setLoading] = useState(true) // Start with loading true
+  const [loading, setLoading] = useState(true)
   const [openFormModal, setOpenFormModal] = useState(false)
   const [editingReport, setEditingReport] = useState<ServiceReport | undefined>(undefined)
   const [snackbarOpen, setSnackbarOpen] = useState(false)
   const [snackbarMessage, setSnackbarMessage] = useState('')
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info'>('success')
 
-  // REMOVED: const [isAuthenticating, setIsAuthenticating] = useState(true)
-
   const [selectedStartDate, setSelectedStartDate] = useState<Dayjs | null>(dayjs())
   const [selectedEndDate, setSelectedEndDate] = useState<Dayjs | null>(dayjs())
   const [activeFilterStartDate, setActiveFilterStartDate] = useState<Dayjs | null>(dayjs())
   const [activeFilterEndDate, setActiveFilterEndDate] = useState<Dayjs | null>(dayjs())
+
+  // NEW STATE FOR PROJECT FILTER
+  const [selectedProject, setSelectedProject] = useState<string>('') // Selected value in the dropdown
+  const [activeFilterProject, setActiveFilterProject] = useState<string>('') // Applied filter value
+
   const [selectedReportIds, setSelectedReportIds] = useState<string[]>([])
 
   const fetchData = async () => {
@@ -85,10 +96,9 @@ export default function ServiceReportsPage() {
     }
   }
 
-  // Effect to fetch data on component mount, without authentication check
   useEffect(() => {
     fetchData()
-  }, []) // Empty dependency array means it runs once on mount
+  }, [])
 
   const filteredReports = useMemo(() => {
     return reports.filter(report => {
@@ -96,24 +106,26 @@ export default function ServiceReportsPage() {
       const isAfterStartDate = activeFilterStartDate ? reportDate.isSameOrAfter(activeFilterStartDate, 'day') : true
       const isBeforeEndDate = activeFilterEndDate ? reportDate.isSameOrBefore(activeFilterEndDate, 'day') : true
 
-      return isAfterStartDate && isBeforeEndDate
+      // NEW FILTER LOGIC FOR PROJECT
+      const isProjectMatch = activeFilterProject ? report.projectId === activeFilterProject : true
+
+      return isAfterStartDate && isBeforeEndDate && isProjectMatch // Combine all conditions
     })
-  }, [reports, activeFilterStartDate, activeFilterEndDate])
+
+    // Add activeFilterProject to dependencies
+  }, [reports, activeFilterStartDate, activeFilterEndDate, activeFilterProject])
 
   const handleOpenAddForm = () => {
-    // REMOVED: Authentication check
     setEditingReport(undefined)
     setOpenFormModal(true)
   }
 
   const handleEditReport = (report: ServiceReport) => {
-    // REMOVED: Authentication check
     setEditingReport(report)
     setOpenFormModal(true)
   }
 
   const handleFormSubmit = async (reportData: Omit<ServiceReport, 'id'> | ServiceReport) => {
-    // REMOVED: Authentication check
     try {
       if ('id' in reportData) {
         const updatedReport: ServiceReport = {
@@ -147,7 +159,6 @@ export default function ServiceReportsPage() {
   }
 
   const handleDeleteReport = async (id: string) => {
-    // REMOVED: Authentication check
     if (window.confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายงานบริการนี้?')) {
       try {
         await deleteServiceReport(id)
@@ -180,6 +191,9 @@ export default function ServiceReportsPage() {
   const handleSearch = () => {
     setActiveFilterStartDate(selectedStartDate)
     setActiveFilterEndDate(selectedEndDate)
+
+    // NEW: Set active project filter
+    setActiveFilterProject(selectedProject)
   }
 
   const handleClearFilter = () => {
@@ -188,6 +202,10 @@ export default function ServiceReportsPage() {
     setActiveFilterStartDate(null)
     setActiveFilterEndDate(null)
     setSelectedReportIds([])
+
+    // NEW: Clear selected and active project filters
+    setSelectedProject('')
+    setActiveFilterProject('')
   }
 
   const handleReportSelection = (reportId: string, isSelected: boolean) => {
@@ -218,7 +236,6 @@ export default function ServiceReportsPage() {
     }
   }
 
-  // Display loading message
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -229,8 +246,6 @@ export default function ServiceReportsPage() {
       </Box>
     )
   }
-
-  // REMOVED: The entire authentication check block that rendered if (!checkAuth())
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale='th'>
@@ -309,6 +324,24 @@ export default function ServiceReportsPage() {
               }
             }}
           />
+          {/* NEW PROJECT FILTER */}
+          <FormControl size='small' sx={{ minWidth: { xs: '100%', sm: '180px' } }}>
+            <InputLabel id='project-select-label'>เลือกโครงการ</InputLabel>
+            <Select
+              labelId='project-select-label'
+              id='project-select'
+              value={selectedProject}
+              label='เลือกโครงการ'
+              onChange={e => setSelectedProject(e.target.value as string)}
+            >
+              <MenuItem value=''>ทั้งหมด</MenuItem> {/* Option for all projects */}
+              {projects.map(project => (
+                <MenuItem key={project.id} value={project.id}>
+                  {project.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <Button
             variant='contained'
             color='primary'
