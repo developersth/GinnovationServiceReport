@@ -10,19 +10,25 @@ import Typography from '@mui/material/Typography'
 import CircularProgress from '@mui/material/CircularProgress'
 import Dialog from '@mui/material/Dialog' // สำหรับ Modal
 import DialogContent from '@mui/material/DialogContent'
-import type { AlertProps } from '@mui/material/Alert'
-import MuiAlert from '@mui/material/Alert' // สำหรับแสดงข้อความแจ้งเตือน
-import Snackbar from '@mui/material/Snackbar' // สำหรับแสดงข้อความแจ้งเตือน
+
+// REMOVED: MuiAlert and AlertProps are now encapsulated in CustomAlert
+// import type { AlertProps } from '@mui/material/Alert'
+// import MuiAlert from '@mui/material/Alert' // สำหรับแสดงข้อความแจ้งเตือน
+// REMOVED: Snackbar is now encapsulated in CustomAlert
+// import Snackbar from '@mui/material/Snackbar' // สำหรับแสดงข้อความแจ้งเตือน
 
 import ProjectTable from '@/views/project/ProjectTable'
-
 import ProjectForm from '@/views/project/ProjectForm'
-import { getProjects, addProject, updateProject, deleteProject } from '../../../libs/api/data' // Import data functions
-import type { Project } from '../../../types'
+import { getProjects, addProject, updateProject, deleteProject } from '@/libs/api/data' // Corrected path to use alias
+import type { Project } from '@/types' // Corrected path to use alias
 
-function Alert(props: AlertProps) {
-  return <MuiAlert elevation={6} variant='filled' {...props} />
-}
+// NEW: Import the CustomSnackbarAlert component
+import { CustomSnackbarAlert } from '@/views/common/CustomAlert' // <-- ADJUST THIS PATH if your CustomAlert.tsx is elsewhere
+
+// REMOVED: This Alert helper function is now part of CustomAlert.tsx
+// function Alert(props: AlertProps) {
+//   return <MuiAlert elevation={6} variant='filled' {...props} />
+// }
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([])
@@ -31,7 +37,9 @@ export default function ProjectsPage() {
   const [editingProject, setEditingProject] = useState<Project | undefined>(undefined)
   const [snackbarOpen, setSnackbarOpen] = useState(false)
   const [snackbarMessage, setSnackbarMessage] = useState('')
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success')
+
+  // Adjusted type to include 'info' and 'warning' for full compatibility
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('success')
 
   // Function to fetch projects
   const fetchProjects = async () => {
@@ -119,6 +127,10 @@ export default function ProjectsPage() {
     }
 
     setSnackbarOpen(false)
+
+    // Good practice: clear message and reset severity when closing
+    setSnackbarMessage('')
+    setSnackbarSeverity('info') // Reset to a neutral or default severity
   }
 
   return (
@@ -147,12 +159,17 @@ export default function ProjectsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Snackbar for notifications */}
-      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleSnackbarClose}>
-        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity}>
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
+      {/* Snackbar for notifications - Now using CustomSnackbarAlert */}
+      <CustomSnackbarAlert
+        open={snackbarOpen}
+        message={snackbarMessage}
+        severity={snackbarSeverity}
+        onClose={handleSnackbarClose}
+
+        // You can still pass other SnackbarProps here if needed, e.g.:
+        // anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        // autoHideDuration={5000}
+      />
     </Box>
   )
 }

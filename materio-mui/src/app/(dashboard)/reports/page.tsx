@@ -12,9 +12,12 @@ import Typography from '@mui/material/Typography'
 import CircularProgress from '@mui/material/CircularProgress'
 import Dialog from '@mui/material/Dialog'
 import DialogContent from '@mui/material/DialogContent'
-import type { AlertProps } from '@mui/material/Alert'
-import MuiAlert from '@mui/material/Alert'
-import Snackbar from '@mui/material/Snackbar'
+
+// REMOVED: MuiAlert and AlertProps are now encapsulated in CustomAlert
+// import type { AlertProps } from '@mui/material/Alert'
+// import MuiAlert from '@mui/material/Alert'
+// REMOVED: Snackbar is now encapsulated in CustomAlert
+// import Snackbar from '@mui/material/Snackbar'
 import AddIcon from '@mui/icons-material/Add'
 import DescriptionIcon from '@mui/icons-material/Description'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
@@ -50,11 +53,13 @@ import {
 import ServiceReportTable from '@views/service-report/ServiceReportTable'
 import ServiceReportForm from '@views/service-report/ServiceReportForm'
 
-// NEW IMPORTS FOR PROJECT FILTER
+// CORRECTED PATH: Make sure this path is accurate for your project structure
+import { CustomSnackbarAlert } from '@/views/common/CustomAlert'
 
-function Alert(props: AlertProps) {
-  return <MuiAlert elevation={6} variant='filled' {...props} />
-}
+// REMOVED: This Alert helper function is now part of CustomAlert.tsx
+// function Alert(props: AlertProps) {
+//   return <MuiAlert elevation={6} variant='filled' {...props} />
+// }
 
 export default function ServiceReportsPage() {
   const router = useRouter()
@@ -63,18 +68,21 @@ export default function ServiceReportsPage() {
   const [loading, setLoading] = useState(true)
   const [openFormModal, setOpenFormModal] = useState(false)
   const [editingReport, setEditingReport] = useState<ServiceReport | undefined>(undefined)
+
+  // Adjusted snackbarOpen to boolean as it's typically true/false
   const [snackbarOpen, setSnackbarOpen] = useState(false)
   const [snackbarMessage, setSnackbarMessage] = useState('')
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info'>('success')
+
+  // Adjusted type to include 'warning' for full compatibility with CustomSnackbarAlert
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('success')
 
   const [selectedStartDate, setSelectedStartDate] = useState<Dayjs | null>(dayjs())
   const [selectedEndDate, setSelectedEndDate] = useState<Dayjs | null>(dayjs())
   const [activeFilterStartDate, setActiveFilterStartDate] = useState<Dayjs | null>(dayjs())
   const [activeFilterEndDate, setActiveFilterEndDate] = useState<Dayjs | null>(dayjs())
 
-  // NEW STATE FOR PROJECT FILTER
-  const [selectedProject, setSelectedProject] = useState<string>('') // Selected value in the dropdown
-  const [activeFilterProject, setActiveFilterProject] = useState<string>('') // Applied filter value
+  const [selectedProject, setSelectedProject] = useState<string>('')
+  const [activeFilterProject, setActiveFilterProject] = useState<string>('')
 
   const [selectedReportIds, setSelectedReportIds] = useState<string[]>([])
 
@@ -106,13 +114,10 @@ export default function ServiceReportsPage() {
       const isAfterStartDate = activeFilterStartDate ? reportDate.isSameOrAfter(activeFilterStartDate, 'day') : true
       const isBeforeEndDate = activeFilterEndDate ? reportDate.isSameOrBefore(activeFilterEndDate, 'day') : true
 
-      // NEW FILTER LOGIC FOR PROJECT
       const isProjectMatch = activeFilterProject ? report.projectId === activeFilterProject : true
 
-      return isAfterStartDate && isBeforeEndDate && isProjectMatch // Combine all conditions
+      return isAfterStartDate && isBeforeEndDate && isProjectMatch
     })
-
-    // Add activeFilterProject to dependencies
   }, [reports, activeFilterStartDate, activeFilterEndDate, activeFilterProject])
 
   const handleOpenAddForm = () => {
@@ -186,13 +191,17 @@ export default function ServiceReportsPage() {
     }
 
     setSnackbarOpen(false)
+
+    // It's good practice to clear the message and reset severity here too,
+    // to prevent old messages from flashing if the snackbar reopens quickly with new content.
+    setSnackbarMessage('')
+    setSnackbarSeverity('info') // Reset to a neutral or default severity
   }
 
   const handleSearch = () => {
     setActiveFilterStartDate(selectedStartDate)
     setActiveFilterEndDate(selectedEndDate)
 
-    // NEW: Set active project filter
     setActiveFilterProject(selectedProject)
   }
 
@@ -203,7 +212,6 @@ export default function ServiceReportsPage() {
     setActiveFilterEndDate(null)
     setSelectedReportIds([])
 
-    // NEW: Clear selected and active project filters
     setSelectedProject('')
     setActiveFilterProject('')
   }
@@ -324,7 +332,6 @@ export default function ServiceReportsPage() {
               }
             }}
           />
-          {/* NEW PROJECT FILTER */}
           <FormControl size='small' sx={{ minWidth: { xs: '100%', sm: '180px' } }}>
             <InputLabel id='project-select-label'>เลือกโครงการ</InputLabel>
             <Select
@@ -334,7 +341,7 @@ export default function ServiceReportsPage() {
               label='เลือกโครงการ'
               onChange={e => setSelectedProject(e.target.value as string)}
             >
-              <MenuItem value=''>ทั้งหมด</MenuItem> {/* Option for all projects */}
+              <MenuItem value=''>ทั้งหมด</MenuItem>
               {projects.map(project => (
                 <MenuItem key={project.id} value={project.id}>
                   {project.name}
@@ -380,11 +387,13 @@ export default function ServiceReportsPage() {
           </DialogContent>
         </Dialog>
 
-        <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleSnackbarClose}>
-          <Alert onClose={handleSnackbarClose} severity={snackbarSeverity}>
-            {snackbarMessage}
-          </Alert>
-        </Snackbar>
+        {/* CORRECTED CustomSnackbarAlert usage */}
+        <CustomSnackbarAlert
+          open={snackbarOpen}
+          message={snackbarMessage} // Pass the state variable here
+          severity={snackbarSeverity}
+          onClose={handleSnackbarClose}
+        />
       </Box>
     </LocalizationProvider>
   )

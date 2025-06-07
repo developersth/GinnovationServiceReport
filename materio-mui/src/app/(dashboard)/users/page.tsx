@@ -10,9 +10,11 @@ import Typography from '@mui/material/Typography'
 import CircularProgress from '@mui/material/CircularProgress'
 import Dialog from '@mui/material/Dialog'
 import DialogContent from '@mui/material/DialogContent'
-import MuiAlert from '@mui/material/Alert'
-import type { AlertProps } from '@mui/material/Alert'
-import Snackbar from '@mui/material/Snackbar'
+
+// REMOVED: MuiAlert and Snackbar imports as they are now handled by CustomSnackbarAlert
+// import MuiAlert from '@mui/material/Alert'
+// import type { AlertProps } from '@mui/material/Alert'
+// import Snackbar from '@mui/material/Snackbar'
 
 import AddIcon from '@mui/icons-material/Add'
 
@@ -24,10 +26,13 @@ import { getUsers, addUser, updateUser, deleteUser } from '../../../libs/api/dat
 import UserTable from '@/views/user/UserTable'
 import UserForm from '@/views/user/UserForm'
 
-// Snackbar Alert
-function Alert(props: AlertProps) {
-  return <MuiAlert elevation={6} variant='filled' {...props} />
-}
+// NEW: Import the CustomSnackbarAlert component
+import { CustomSnackbarAlert } from '@/views/common/CustomAlert' // <-- ADJUST THIS PATH if your CustomAlert.tsx is elsewhere
+
+// REMOVED: This Alert helper function is no longer needed here
+// function Alert(props: AlertProps) {
+//   return <MuiAlert elevation={6} variant='filled' {...props} />
+// }
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
@@ -36,8 +41,10 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<User | undefined>(undefined)
   const [snackbarOpen, setSnackbarOpen] = useState(false)
   const [snackbarMessage, setSnackbarMessage] = useState('')
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success')
-  const [isMounted, setIsMounted] = useState(false)
+
+  // ADJUSTED: Added 'info' and 'warning' to severity types for full compatibility
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('success')
+  const [isMounted, setIsMounted] = useState(false) // Keeping this state for now, though often not strictly needed with Dialog
 
   useEffect(() => {
     setIsMounted(true)
@@ -118,6 +125,10 @@ export default function UsersPage() {
   const handleSnackbarClose = (event?: React.SyntheticEvent | Event, reason?: string) => {
     if (reason === 'clickaway') return
     setSnackbarOpen(false)
+
+    // ADDED: Clear message and reset severity when closing
+    setSnackbarMessage('')
+    setSnackbarSeverity('info') // Reset to a neutral or default severity
   }
 
   return (
@@ -142,7 +153,7 @@ export default function UsersPage() {
       )}
 
       {/* Dialog: Add/Edit User */}
-      {isMounted && (
+      {isMounted && ( // isMounted check can be debated, but kept as per original code
         <Dialog open={openFormModal} onClose={handleCloseFormModal} keepMounted>
           <DialogContent>
             <UserForm initialData={editingUser} onSubmit={handleFormSubmit} onCancel={handleCloseFormModal} />
@@ -150,12 +161,16 @@ export default function UsersPage() {
         </Dialog>
       )}
 
-      {/* Snackbar */}
-      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleSnackbarClose}>
-        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity}>
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
+      {/* Snackbar - Now using CustomSnackbarAlert */}
+      <CustomSnackbarAlert
+        open={snackbarOpen}
+        message={snackbarMessage}
+        severity={snackbarSeverity}
+        onClose={handleSnackbarClose}
+
+        // You can add other SnackbarProps here if you want to override defaults
+        // e.g., autoHideDuration={4000} or anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      />
     </Box>
   )
 }

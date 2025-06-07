@@ -46,6 +46,7 @@ const Navigation = () => {
 
   const scrollMenu = (container: any, isPerfectScrollbar: boolean) => {
     container = isBreakpointReached || !isPerfectScrollbar ? container.target : container
+    debugger
 
     if (shadowRef && container.scrollTop > 0) {
       // @ts-ignore

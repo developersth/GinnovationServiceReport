@@ -19,53 +19,64 @@ import Checkbox from '@mui/material/Checkbox'
 import Button from '@mui/material/Button'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Divider from '@mui/material/Divider'
-import CircularProgress from '@mui/material/CircularProgress' // Import CircularProgress for loading indicator
-import Snackbar from '@mui/material/Snackbar' // Import Snackbar for messages
-import MuiAlert from '@mui/material/Alert' // Import Alert for Snackbar content
-import type { AlertProps } from '@mui/material/Alert' // Type for Alert
+import CircularProgress from '@mui/material/CircularProgress'
+
+// REMOVED: Snackbar and MuiAlert imports are no longer needed here
+// as they are encapsulated within CustomSnackbarAlert
+// import Snackbar from '@mui/material/Snackbar'
+// import MuiAlert from '@mui/material/Alert'
+// import type { AlertProps } from '@mui/material/Alert' // This type is also not needed here
 
 // Type Imports
-import type { Mode } from '@core/types'
+import type { Mode } from '@core/types' // Assuming this type is still relevant
 
 // Component Imports
-import Logo from '@components/layout/shared/Logo'
-import Illustrations from '@components/Illustrations'
+import Logo from '@components/layout/shared/Logo' // Path for Logo
+import Illustrations from '@components/Illustrations' // Path for Illustrations
 
 // Config Imports
-import themeConfig from '@configs/themeConfig'
+import themeConfig from '@configs/themeConfig' // Path for themeConfig
 
 // Hook Imports
-import { useImageVariant } from '@core/hooks/useImageVariant'
+import { useImageVariant } from '@core/hooks/useImageVariant' // Path for useImageVariant
 
-// API Import (New)
-import { login } from '@/libs/api/auth' // Adjust this path as per your file structure
+// API Import
+import { login } from '@/libs/api/auth' // Adjust this path if different (e.g., '../../lib/api/auth')
 
-// Helper for Snackbar Alert
-function Alert(props: AlertProps) {
-  return <MuiAlert elevation={6} variant='filled' {...props} />
-}
+// NEW: Import the CustomSnackbarAlert component
+import { CustomSnackbarAlert } from '@/views/common/CustomAlert' // <-- ADJUST THIS PATH if your CustomAlert.tsx is elsewhere
 
-const Login = ({ mode }: { mode: Mode }) => {
+// REMOVED: This helper function is now part of CustomAlert.tsx
+// function Alert(props: AlertProps) {
+//   return <MuiAlert elevation={6} variant='filled' {...props} />
+// }
+
+// NOTE: No changes needed here, just a comment from previous iteration.
+// Removed LoginFormProps interface and onLoginSuccess prop
+// as the component now directly handles redirection via useRouter
+// and the login API handles local storage management.
+// If you still need a callback for specific parent component logic,
+// you would re-add it here and in the component signature.
+
+export default function LoginForm({ mode }: { mode: Mode }) {
+  // Added mode prop for illustrations
   // States
   const [isPasswordShown, setIsPasswordShown] = useState(false)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // CHANGED: Renamed 'error' to 'snackbarDisplayMessage' for clarity
   const [snackbarDisplayMessage, setSnackbarDisplayMessage] = useState<string>('')
   const [snackbarOpen, setSnackbarOpen] = useState(false)
-
-  // CHANGED: Added 'snackbarSeverity' state to explicitly control alert severity
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'warning' | 'info'>('info')
 
-  // Vars
+  // Vars for Illustrations
   const darkImg = '/images/pages/auth-v1-mask-dark.png'
   const lightImg = '/images/pages/auth-v1-mask-light.png'
 
   // Hooks
   const router = useRouter()
-  const authBackground = useImageVariant(mode, lightImg, darkImg)
+  const authBackground = useImageVariant(mode, lightImg, darkImg) // Used for illustrations
 
   const handleClickShowPassword = () => setIsPasswordShown(show => !show)
 
@@ -79,37 +90,36 @@ const Login = ({ mode }: { mode: Mode }) => {
     setSnackbarSeverity('info') // Reset severity
   }
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault() // Prevent default form submission
+
     setLoading(true)
     setSnackbarOpen(false) // Close any existing snackbars
     setSnackbarDisplayMessage('') // Clear previous message
     setSnackbarSeverity('info') // Reset severity
 
     try {
-      // Assuming 'login' returns boolean success or throws an error
       const success = await login(username, password)
 
       if (success) {
-        // Login successful
         setSnackbarDisplayMessage('เข้าสู่ระบบสำเร็จ!')
         setSnackbarSeverity('success')
         setSnackbarOpen(true)
-        router.push('/admin/services') // Redirect to dashboard or desired page
+
+        // Assuming your `login` API call already handles storing tokens/user info.
+        router.push('/') // Redirect to dashboard or desired page
       } else {
-        // Login failed, and the 'login' function returned false
         setSnackbarDisplayMessage('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง')
         setSnackbarSeverity('error')
         setSnackbarOpen(true)
       }
     } catch (apiError: any) {
-      // Network or unexpected error, or error thrown by 'login' function
       console.error('Login API call failed:', apiError)
       setSnackbarDisplayMessage(apiError.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ กรุณาลองใหม่อีกครั้ง')
       setSnackbarSeverity('error')
       setSnackbarOpen(true)
     } finally {
-      setLoading(false) // End loading
+      setLoading(false) // End loading regardless of success or failure
     }
   }
 
@@ -125,7 +135,7 @@ const Login = ({ mode }: { mode: Mode }) => {
               <Typography variant='h4'>{`Welcome to ${themeConfig.templateName}!👋🏻`}</Typography>
               <Typography className='mbs-1'>Please sign-in to your account and start the adventure</Typography>
             </div>
-            <form noValidate autoComplete='off' onSubmit={handleSubmit} className='flex flex-col gap-5'>
+            <form noValidate autoComplete='off' onSubmit={handleLogin} className='flex flex-col gap-5'>
               <TextField
                 autoFocus
                 fullWidth
@@ -134,6 +144,7 @@ const Login = ({ mode }: { mode: Mode }) => {
                 onChange={e => setUsername(e.target.value)}
                 error={snackbarOpen && snackbarSeverity === 'error'}
                 autoComplete='username'
+                disabled={loading}
               />
               <TextField
                 fullWidth
@@ -143,6 +154,7 @@ const Login = ({ mode }: { mode: Mode }) => {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 error={snackbarOpen && snackbarSeverity === 'error'}
+                disabled={loading}
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position='end'>
@@ -151,6 +163,7 @@ const Login = ({ mode }: { mode: Mode }) => {
                         edge='end'
                         onClick={handleClickShowPassword}
                         onMouseDown={e => e.preventDefault()}
+                        disabled={loading}
                       >
                         <i className={isPasswordShown ? 'ri-eye-off-line' : 'ri-eye-line'} />
                       </IconButton>
@@ -159,7 +172,7 @@ const Login = ({ mode }: { mode: Mode }) => {
                 }}
               />
               <div className='flex justify-between items-center gap-x-3 gap-y-1 flex-wrap'>
-                <FormControlLabel control={<Checkbox />} label='Remember me' />
+                <FormControlLabel control={<Checkbox disabled={loading} />} label='Remember me' />
                 <Typography className='text-end' color='primary' component={Link} href='/forgot-password'>
                   Forgot password?
                 </Typography>
@@ -168,8 +181,8 @@ const Login = ({ mode }: { mode: Mode }) => {
                 fullWidth
                 variant='contained'
                 type='submit'
-                disabled={loading} // Disable button when loading
-                startIcon={loading ? <CircularProgress size={20} color='inherit' /> : null} // Show spinner
+                disabled={loading}
+                startIcon={loading ? <CircularProgress size={20} color='inherit' /> : null}
               >
                 {loading ? 'Logging In...' : 'Log In'}
               </Button>
@@ -181,16 +194,16 @@ const Login = ({ mode }: { mode: Mode }) => {
               </div>
               <Divider className='gap-3'>or</Divider>
               <div className='flex justify-center items-center gap-2'>
-                <IconButton size='small' className='text-facebook'>
+                <IconButton size='small' className='text-facebook' disabled={loading}>
                   <i className='ri-facebook-fill' />
                 </IconButton>
-                <IconButton size='small' className='text-twitter'>
+                <IconButton size='small' className='text-twitter' disabled={loading}>
                   <i className='ri-twitter-fill' />
                 </IconButton>
-                <IconButton size='small' className='text-github'>
+                <IconButton size='small' className='text-github' disabled={loading}>
                   <i className='ri-github-fill' />
                 </IconButton>
-                <IconButton size='small' className='text-googlePlus'>
+                <IconButton size='small' className='text-googlePlus' disabled={loading}>
                   <i className='ri-google-fill' />
                 </IconButton>
               </div>
@@ -200,19 +213,18 @@ const Login = ({ mode }: { mode: Mode }) => {
       </Card>
       <Illustrations maskImg={{ src: authBackground }} />
 
-      {/* Snackbar for showing messages */}
-      <Snackbar
+      {/* REPLACED: Snackbar for showing messages */}
+      {/* Use the new CustomSnackbarAlert component */}
+      <CustomSnackbarAlert
         open={snackbarOpen}
-        autoHideDuration={6000}
+        message={snackbarDisplayMessage}
+        severity={snackbarSeverity}
         onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity}>
-          {snackbarDisplayMessage}
-        </Alert>
-      </Snackbar>
+
+        // You can still override default props if needed, e.g.:
+        // autoHideDuration={5000}
+        // anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      />
     </div>
   )
 }
-
-export default Login
