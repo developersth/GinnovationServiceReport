@@ -15,13 +15,16 @@ import Paper from '@mui/material/Paper'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import DeleteIcon from '@mui/icons-material/Delete'
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
+
+// import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf' // *** ลบ import นี้ออก ***
+import VisibilityIcon from '@mui/icons-material/Visibility' // *** เพิ่ม import นี้เข้ามาแทน ***
 import EditIcon from '@mui/icons-material/Edit'
 import Dialog from '@mui/material/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import Chip from '@mui/material/Chip'
 import Checkbox from '@mui/material/Checkbox'
+import TablePagination from '@mui/material/TablePagination'
 
 // ตรวจสอบให้แน่ใจว่า ServiceReport ใน types.ts ของคุณมีฟิลด์ครบถ้วนตาม API
 import type { ServiceReport, Project } from '../../types'
@@ -82,6 +85,10 @@ export default function ServiceReportTable({
   const [openFullImageModal, setOpenFullImageModal] = React.useState(false)
   const [fullImageUrl, setFullImageUrl] = React.useState<string | null>(null)
 
+  // State สำหรับ Pagination
+  const [page, setPage] = React.useState(0) // หน้าปัจจุบัน, เริ่มต้นที่ 0
+  const [rowsPerPage, setRowsPerPage] = React.useState(10) // จำนวนแถวต่อหน้า, เริ่มต้นที่ 10
+
   const isAllSelected = safeReports.length > 0 && selectedReportIds.length === safeReports.length
   const isIndeterminate = selectedReportIds.length > 0 && selectedReportIds.length < safeReports.length
 
@@ -102,6 +109,19 @@ export default function ServiceReportTable({
   const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
     onSelectAllReports(event.target.checked)
   }
+
+  // Handlers สำหรับ Pagination
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage)
+  }
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10))
+    setPage(0) // กลับไปหน้าแรกเมื่อเปลี่ยนจำนวนแถวต่อหน้า
+  }
+
+  // Logic การแสดงผลข้อมูลตามหน้า
+  const displayedReports = safeReports.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
 
   return (
     <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
@@ -132,7 +152,7 @@ export default function ServiceReportTable({
           </TableRow>
         </TableHead>
         <TableBody>
-          {safeReports.map((report, index) => {
+          {displayedReports.map((report, index) => {
             const projectName = safeProjects.find(p => p.id === report.projectId)?.name || 'N/A'
             const isSelected = selectedReportIds.includes(report.id as string)
 
@@ -145,7 +165,7 @@ export default function ServiceReportTable({
                     onChange={event => onSelectReport(report.id as string, event.target.checked)}
                   />
                 </TableCell>
-                <TableCell>{index + 1}</TableCell>
+                <TableCell>{page * rowsPerPage + index + 1}</TableCell>
                 <TableCell>{report.id.slice(-6)}</TableCell>
                 <TableCell>{projectName}</TableCell>
                 <TableCell>{report.reportedBy || 'N/A'}</TableCell>
@@ -191,14 +211,35 @@ export default function ServiceReportTable({
                     <DeleteIcon />
                   </IconButton>
                   <IconButton aria-label='view' color='info' onClick={() => handleViewReport(report.id as string)}>
-                    <PictureAsPdfIcon />
+                    <VisibilityIcon /> {/* *** เปลี่ยนตรงนี้ *** */}
                   </IconButton>
                 </TableCell>
               </TableRow>
             )
           })}
+          {/* กรณีไม่มีข้อมูล */}
+          {displayedReports.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={13} align='center'>
+                ไม่มีข้อมูลรายงานบริการ
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
+      <TablePagination
+        rowsPerPageOptions={[5, 10, 25, 50, 100]}
+        component='div'
+        count={safeReports.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        labelRowsPerPage='จำนวนแถวต่อหน้า:'
+        labelDisplayedRows={({ from, to, count }) =>
+          `แสดง ${from}-${to} จากทั้งหมด ${count !== -1 ? count : `มากกว่า ${to}`}`
+        }
+      />
 
       {/* Full Image Preview Dialog */}
       <Dialog open={openFullImageModal} onClose={handleCloseFullImageModal} maxWidth='md' fullWidth>

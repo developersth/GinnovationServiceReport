@@ -2,14 +2,14 @@
 import React from 'react'
 
 import { Box, Typography, Paper, Divider, List, ListItem, ListItemText, ImageList, ImageListItem } from '@mui/material'
-import MuiGrid from '@mui/material/Grid' // Alias Grid as MuiGrid to avoid potential conflicts
+import MuiGrid from '@mui/material/Grid'
 
-import type { ServiceReport, Project } from '../../types' // Assuming types are here
-import { combineImageUrl, formatDate } from '../../utils' // Re-use utilities
+import type { ServiceReport, Project } from '../../types'
+import { combineImageUrl, formatDate } from '../../utils'
 
 interface ServiceReportDetailProps {
   report: ServiceReport
-  project?: Project // Project data is passed directly from the parent fetching component
+  project?: Project
 }
 
 const ServiceReportDetail: React.FC<ServiceReportDetailProps> = ({ report, project }) => {
@@ -17,26 +17,22 @@ const ServiceReportDetail: React.FC<ServiceReportDetailProps> = ({ report, proje
     return <Typography>No service report data available.</Typography>
   }
 
-  // The 'project' prop should contain the full Project object if available.
-  // We rely on the parent component (e.g., service-report-id-page.tsx) to fetch and pass it.
   const currentProject = project
 
   return (
-    <Paper sx={{ p: 4, my: 4 }}>
-      {/* Header Section: Project Info, Report Date, Reporter */}
+    <Paper sx={{ p: 4, my: 4, bgcolor: 'background.paper' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {/* Use currentProject?.imageUrl instead of currentProject?.logo */}
           {currentProject?.imageUrl && (
             <img
               src={combineImageUrl(currentProject.imageUrl)}
               alt={currentProject.name}
+              className='report-logo' // Add this class
               style={{ width: 80, height: 80, objectFit: 'contain', borderRadius: '8px' }}
             />
           )}
           <Box>
             <Typography variant='h5' component='h2' gutterBottom>
-              {/* Display Project Name. Removed 'code' as it's not in Project model. */}
               {currentProject ? `Project: ${currentProject.name}` : 'Project Not Found'}
             </Typography>
             <Typography variant='subtitle1' color='text.secondary'>
@@ -46,15 +42,12 @@ const ServiceReportDetail: React.FC<ServiceReportDetailProps> = ({ report, proje
         </Box>
         <Box sx={{ textAlign: 'right' }}>
           <Typography variant='body1'>**Report Date:** {formatDate(report.reportDate)}</Typography>
-          <Typography variant='body1'>
-            **Reporter:** {report.reportedBy} {/* Using 'reportedBy' as per updated type */}
-          </Typography>
+          <Typography variant='body1'>**Reporter:** {report.reportedBy}</Typography>
         </Box>
       </Box>
 
       <Divider sx={{ my: 3 }} />
 
-      {/* Detail Section: Complain, CausesOfFailure, Action Taken, Channel */}
       <MuiGrid container spacing={3}>
         <MuiGrid item xs={12}>
           <Typography variant='h6' gutterBottom>
@@ -91,12 +84,10 @@ const ServiceReportDetail: React.FC<ServiceReportDetailProps> = ({ report, proje
 
       <Divider sx={{ my: 3 }} />
 
-      {/* Images Section */}
       <Box>
         <Typography variant='h6' gutterBottom>
           Attached Images
         </Typography>
-        {/* Use report.imagePaths instead of report.imageUrls */}
         {report.imagePaths && report.imagePaths.length > 0 ? (
           <ImageList sx={{ width: '100%', height: 'auto', mt: 2 }} cols={3} rowHeight={164}>
             {report.imagePaths.map(

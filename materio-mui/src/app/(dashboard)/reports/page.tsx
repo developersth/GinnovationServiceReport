@@ -285,7 +285,7 @@ export default function ServiceReportsPage() {
             <Button
               fullWidth
               variant='contained'
-              color='secondary'
+              color='success'
               onClick={handleGenerateReport}
               startIcon={<DescriptionIcon />}
               disabled={selectedReportIds.length === 0}
