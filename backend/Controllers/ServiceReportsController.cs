@@ -1,6 +1,8 @@
 using backend.Models;
 using backend.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 
 namespace backend.Controllers;
 
@@ -25,25 +27,27 @@ public class ServiceReportController : ControllerBase
         // กำหนด timezone Asia/Bangkok (UTC+7)
         var timeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
 
-        var result = reports.Select(r => new ServiceReport
-        {
-            Id = r.Id,
-            ProjectId = r.ProjectId,
-            ReportedBy = r.ReportedBy,
-            Channel = r.Channel,
-            Complain = r.Complain,
-            Details = r.Details,
-            CausesOfFailure = r.CausesOfFailure,
-            ActionTaken = r.ActionTaken,
-            ImagePaths = r.ImagePaths,
-            // แปลงเวลาจาก UTC เป็นเวลาไทย
-            ReportDate = TimeZoneInfo.ConvertTimeFromUtc(r.ReportDate, timeZone),
-            Status = r.Status,
-            CreatedBy = r.CreatedBy,
-            CreatedAt = TimeZoneInfo.ConvertTimeFromUtc(r.CreatedAt, timeZone),
-            UpdatedBy = r.UpdatedBy,
-            UpdatedAt = TimeZoneInfo.ConvertTimeFromUtc(r.UpdatedAt, timeZone),
-        });
+        var result = reports
+            .OrderBy(r => r.ReportDate) // <-- เพิ่มบรรทัดนี้เพื่อเรียงตามวันที่
+            .Select(r => new ServiceReport
+            {
+                Id = r.Id,
+                ProjectId = r.ProjectId,
+                ReportedBy = r.ReportedBy,
+                Channel = r.Channel,
+                Complain = r.Complain,
+                Details = r.Details,
+                CausesOfFailure = r.CausesOfFailure,
+                ActionTaken = r.ActionTaken,
+                ImagePaths = r.ImagePaths,
+                // แปลงเวลาจาก UTC เป็นเวลาไทย
+                ReportDate = TimeZoneInfo.ConvertTimeFromUtc(r.ReportDate, timeZone),
+                Status = r.Status,
+                CreatedBy = r.CreatedBy,
+                CreatedAt = TimeZoneInfo.ConvertTimeFromUtc(r.CreatedAt, timeZone),
+                UpdatedBy = r.UpdatedBy,
+                UpdatedAt = TimeZoneInfo.ConvertTimeFromUtc(r.UpdatedAt, timeZone),
+            });
 
         return Ok(result);
     }
@@ -76,9 +80,19 @@ public class ServiceReportController : ControllerBase
                 var fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
                 var filePath = Path.Combine(uploadsFolder, fileName);
 
-                using var stream = new FileStream(filePath, FileMode.Create);
-                await image.CopyToAsync(stream);
-
+                // --- Resize image before saving ---
+                using (var imageStream = image.OpenReadStream())
+                using (var img = await Image.LoadAsync(imageStream))
+                {
+                    // ปรับขนาดภาพ (ตัวอย่าง: กว้าง 1024px สูงอัตราส่วนเดิม)
+                    int maxWidth = 1024;
+                    if (img.Width > maxWidth)
+                    {
+                        int newHeight = img.Height * maxWidth / img.Width;
+                        img.Mutate(x => x.Resize(maxWidth, newHeight));
+                    }
+                    await img.SaveAsync(filePath);
+                }
                 imageUrls.Add($"/images/service-reports/{fileName}");
             }
         }

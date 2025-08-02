@@ -1,24 +1,39 @@
-// src/app/layout.tsx
-import './globals.css';
-import { Sarabun } from 'next/font/google'; // เปลี่ยนจาก Prompt เป็น Sarabun
+// Third-party Imports
+import 'react-perfect-scrollbar/dist/css/styles.css'
 
-// กำหนดค่าฟอนต์ Sarabun
+// ✅ Google Font Import
+import { Sarabun } from 'next/font/google'
+
+// Type Imports
+import type { ChildrenType } from '@core/types'
+
+// Style Imports
+import '@/app/globals.css'
+
+// Generated Icon CSS Imports
+import '@assets/iconify-icons/generated-icons.css'
+
 const sarabun = Sarabun({
-  weight: ['100', '200', '300', '400', '500', '600', '700', '800'], // กำหนดน้ำหนักที่ต้องการ
-  subsets: ['thai', 'latin'], // ระบุ subsets ที่จำเป็น
-  display: 'swap',
-  variable: '--font-sarabun', // กำหนด CSS variable name
-});
+  weight: ['300', '400', '500', '700'],
+  subsets: ['thai'],
+  display: 'swap'
+})
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    // ใช้ className ของฟอนต์ Sarabun
-    <html lang="th" className={`${sarabun.variable}`}>
-      <body>{children}</body>
-    </html>
-  );
+export const metadata = {
+  title: 'G Innovation - Service Report',
+  description:
+    'Develop next-level web apps with Materio Dashboard Free - NextJS. Now, updated with lightning-fast routing powered by MUI and App router.'
 }
+
+const RootLayout = ({ children }: ChildrenType) => {
+  // Vars
+  const direction = 'ltr'
+
+  return (
+    <html id='__next' dir={direction} lang='th'>
+      <body className={`flex is-full min-bs-full flex-auto flex-col ${sarabun.className}`}>{children}</body>
+    </html>
+  )
+}
+
+export default RootLayout

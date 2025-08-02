@@ -1,93 +1,189 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --font-sarabun: 'Sarabun', sans-serif;
+  /* fallback เผื่อไม่ได้โหลดผ่าน next/font */
+  --border-radius: var(--mui-shape-borderRadius);
+  --border-color: var(--mui-palette-divider);
+  --primary-color: var(--mui-palette-primary-main);
+  --background-color: var(--mui-palette-background-default);
+  --header-height: 64px;
+  --header-z-index: var(--mui-zIndex-appBar);
+  --footer-z-index: 10;
+  --customizer-z-index: var(--mui-zIndex-drawer);
+  --search-z-index: var(--mui-zIndex-tooltip);
+  --drawer-z-index: var(--mui-zIndex-drawer);
+  --backdrop-color: rgb(var(--mui-mainColorChannels-light) / 0.5);
 }
 
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+[data-mui-color-scheme='dark'] {
+  --backdrop-color: rgb(21 16 43 / 0.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  display: flex;
+  inline-size: 100%;
+  min-block-size: 100%;
+  font-family: 'Sarabun', sans-serif;
 }
 
 body {
-  font-family: var(--font-prompt), sans-serif; /* ใช้ CSS variable จาก @next/font/google */
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Sarabun', sans-serif;
 }
-/* src/app/globals.css */
-
-/* Other global styles */
 
 @media print {
-  /* Hide elements that should not be printed */
+  @page {
+    size: A4;
+    margin: 1.2cm;
+    /* ลด margin default สำหรับการพิมพ์ */
+  }
+
+  .report-logo {
+    width: 40px !important;
+    /* Adjust as needed */
+    height: 40px !important;
+    /* Adjust as needed */
+    /* Add any other print-specific adjustments, e.g., margin-top, margin-bottom */
+    margin-bottom: 5px;
+    /* Example: add a small margin below */
+  }
+
+  /* You might also want to adjust other elements for print */
+  h2,
+  h5,
+  h6 {
+    font-size: 1em !important;
+    /* Make headings smaller for print */
+  }
+
+  p,
+  li {
+    font-size: 0.8em !important;
+    /* Make text smaller for print */
+  }
+
+  /* ซ่อน elements ที่ไม่ควรพิมพ์ */
   .print\:hidden {
     display: none !important;
   }
 
-  /* Adjust body or main container styles for printing */
+  /* ปรับ style ของ body หรือ main container สำหรับการพิมพ์ */
   body {
-    margin: 0;
-    padding: 0;
-    /* You might want to unset background colors or shadows */
+    margin: 0 !important;
+    padding: 0 !important;
     background-color: #fff !important;
     color: #000 !important;
+    box-shadow: none !important;
   }
 
-  /* Target the main report container for specific print styles */
+  /* Target main containers that might be wrapped in print-specific components */
   .max-w-4xl.mx-auto {
-    width: 100% !important; /* Make it full width for print */
-    max-width: none !important; /* Remove max-width restriction */
-    margin: 0 !important; /* Remove auto margins */
-    box-shadow: none !important; /* Remove shadow for print */
-    border: none !important; /* Remove border if desired */
-    padding: 0.5in !important; /* Set print-friendly padding */
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 1cm !important;
+    /* ปรับ padding ให้สอดคล้องกับ Box หลักใน component */
   }
 
-  /* Force elements to be displayed */
+  /* บังคับให้ elements แสดงผล */
   .print\:block {
     display: block !important;
   }
 
-  /* Control page breaks */
+  /* ควบคุมการขึ้นหน้าใหม่ */
   .page-break-after {
-    page-break-after: always;
-  }
-  .page-break-before {
-    page-break-before: always;
-  }
-  .no-break {
-    page-break-inside: avoid;
+    page-break-after: always !important;
   }
 
-  /* Example: ensure tables fit */
+  .page-break-before {
+    page-break-before: always !important;
+  }
+
+  .no-break {
+    page-break-inside: avoid !important;
+  }
+
+  /* ตาราง: ทำให้พอดีกับหน้ากระดาษและข้อความ wrap ได้ */
   table {
     width: 100% !important;
-    table-layout: fixed; /* helps with column widths */
+    table-layout: fixed !important;
   }
-  th, td {
-    white-space: normal; /* Allow text to wrap */
+
+  th,
+  td {
+    white-space: normal !important;
+    word-break: break-word !important;
   }
-}
-/* กำหนด font ที่จะใช้สำหรับ Body */
 
-/* คุณอาจจะลบสไตล์อื่นๆ ที่เกี่ยวข้องกับ Tailwind ออกไป */
-/* หรือเปลี่ยนไปใช้ MUI's CssBaseline และ Theme colors */
-html.light {
-  /* ... */
-}
+  /* กำหนดเส้นขอบตารางให้ชัดเจนขึ้นเมื่อพิมพ์ */
+  table,
+  th,
+  td {
+    border-collapse: collapse !important;
+    border: 1px solid #000 !important;
+  }
 
-html.dark {
-  /* ... */
+  /* จัดการสีพื้นหลังของ TableHead เมื่อพิมพ์ */
+  thead tr {
+    background-color: #f0f0f0 !important;
+  }
+
+  /* ตรวจสอบให้แน่ใจว่าสีข้อความและพื้นหลังใน print mode เป็น light theme */
+  * {
+    color: #000 !important;
+    /* background-color: transparent !important; */
+  }
+
+  thead tr {
+    background-color: #f0f0f0 !4important;
+    /* ใช้ !important เพื่อให้แน่ใจว่าทับได้ */
+  }
+
+  /* สำหรับ Box ที่มี bgcolor ให้คงสีขาวไว้ */
+  .MuiBox-root {
+    background-color: #ffffff !important;
+  }
+
+
+  /* Hide elements by their roles or common class names if they aren't explicit print-hidden */
+  .MuiAppBar-root,
+  .MuiDrawer-root,
+  .MuiFab-root,
+  .MuiSpeedDial-root,
+  .MuiTooltip-popper,
+  .MuiAlert-root,
+  .MuiSnackbar-root,
+  .MuiDialog-root:not(.print-dialog),
+  .MuiModal-root {
+    display: none !important;
+  }
+
+  /* ถ้ามี pagination ในตาราง ก็ควรซ่อนไป */
+  .MuiTablePagination-root {
+    display: none !important;
+  }
+
+  /* ปรับขนาดฟอนต์โดยรวมสำหรับเนื้อหาในเอกสารพิมพ์ */
+  html,
+  body {
+    font-size: 9pt !important;
+    /* ลดขนาดฟอนต์ให้เล็กลงอีก */
+  }
+
+  /* ถ้ามี padding หรือ margin ที่อาจทำให้เกินหน้ากระดาษ */
+  .MuiBox-root,
+  .MuiPaper-root {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* สำหรับรูปภาพในตาราง (ถ้ามี) */
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
 }
