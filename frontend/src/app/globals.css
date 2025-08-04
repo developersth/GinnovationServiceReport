@@ -39,14 +39,23 @@ body {
     margin: 1.2cm;
     /* ลด margin default สำหรับการพิมพ์ */
   }
-
+ .main-report-table thead {
+    display: table-header-group !important;
+  }
+  .main-report-table tfoot {
+    display: table-footer-group !important;
+  }
+  .main-report-table tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
   .report-logo {
-    width: 40px !important;
+    inline-size: 40px !important;
     /* Adjust as needed */
-    height: 40px !important;
+    block-size: 40px !important;
     /* Adjust as needed */
     /* Add any other print-specific adjustments, e.g., margin-top, margin-bottom */
-    margin-bottom: 5px;
+    margin-block-end: 5px;
     /* Example: add a small margin below */
   }
 
@@ -80,8 +89,8 @@ body {
 
   /* Target main containers that might be wrapped in print-specific components */
   .max-w-4xl.mx-auto {
-    width: 100% !important;
-    max-width: none !important;
+    inline-size: 100% !important;
+    max-inline-size: none !important;
     margin: 0 !important;
     box-shadow: none !important;
     border: none !important;
@@ -109,7 +118,7 @@ body {
 
   /* ตาราง: ทำให้พอดีกับหน้ากระดาษและข้อความ wrap ได้ */
   table {
-    width: 100% !important;
+    inline-size: 100% !important;
     table-layout: fixed !important;
   }
 
@@ -139,7 +148,7 @@ body {
   }
 
   thead tr {
-    background-color: #f0f0f0 !4important;
+    background-color: #f0f0f0 !important;
     /* ใช้ !important เพื่อให้แน่ใจว่าทับได้ */
   }
 
@@ -183,7 +192,33 @@ body {
 
   /* สำหรับรูปภาพในตาราง (ถ้ามี) */
   img {
-    max-width: 100% !important;
-    height: auto !important;
+    max-inline-size: 100% !important;
+    block-size: auto !important;
+  }
+
+  /* ให้หัวตารางขึ้นทุกหน้า */
+  table thead {
+    display: table-header-group !important;
+  }
+  table tfoot {
+    display: table-footer-group !important;
+  }
+
+  /* ห้ามใช้ page-break-inside กับ tr/tbody เพราะจะทำให้ browser ตัดหน้าไม่ได้ */
+  tr, tbody {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  /* ป้องกันตารางขาดกลางหน้า */
+  table {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  /* ป้องกัน header/footer ไม่ให้ขึ้นหน้าใหม่ลอย */
+  .report-header, .report-footer {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }
