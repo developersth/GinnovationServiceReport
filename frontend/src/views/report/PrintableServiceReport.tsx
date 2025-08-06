@@ -2,30 +2,13 @@
 
 import React, { useState, useEffect, forwardRef } from 'react'
 
-import {
-  Box,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Checkbox,
-  FormControlLabel,
-  Grid
-} from '@mui/material'
+import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material'
 import { createTheme, ThemeProvider } from '@mui/material/styles'
 
-// You might need to adjust these types based on your actual data structure
 import type { ServiceReport, Project, User } from '../../types'
-
-// Define a type for service staff row if it includes additional fields
-
 import { formatDate } from '../../utils'
 import { getName } from '../../libs/api/auth'
 
-// Define a type for service staff row with additional fields
 interface ServiceStaffRow extends User {
   date?: string
   start?: string
@@ -35,14 +18,12 @@ interface ServiceStaffRow extends User {
   charging?: string
 }
 
-// Define the component props
 interface PrintableServiceReportProps {
   reports: ServiceReport[]
   project?: Project
-  serviceStaff?: ServiceStaffRow[] // Updated type for service staff
+  serviceStaff?: ServiceStaffRow[]
 }
 
-// Custom theme for printing
 const printTheme = createTheme({
   palette: {
     mode: 'light',
@@ -107,11 +88,12 @@ const printTheme = createTheme({
   }
 })
 
-// Use forwardRef to allow the parent component to reference this component's DOM node
 const PrintableServiceReport = forwardRef<HTMLDivElement, PrintableServiceReportProps>(
   ({ reports, project, serviceStaff = [] }, ref) => {
     const [reporterName, setReporterName] = useState<string | null>(null)
 
+    console.log(serviceStaff)
+    console.log(reporterName)
     useEffect(() => {
       setReporterName(getName())
     }, [])
@@ -133,8 +115,6 @@ const PrintableServiceReport = forwardRef<HTMLDivElement, PrintableServiceReport
 
     return (
       <ThemeProvider theme={printTheme}>
-
-
         <Box
           ref={ref}
           sx={{
@@ -159,44 +139,34 @@ const PrintableServiceReport = forwardRef<HTMLDivElement, PrintableServiceReport
           }}
         >
           {/* Header */}
-          <Box className="report-header" sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 3,
-            pb: 2,
-            borderBottom: '2px solid #000',
-            '@media print': {
-              pageBreakAfter: 'avoid',
-              marginBottom: '1.5cm',
-              paddingBottom: '0.5cm'
-            }
-          }}>
-            {/* ... (Your header content is unchanged) ... */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              mb: 3,
+              pb: 2,
+              borderBottom: '2px solid #000',
+              '@media print': {
+                pageBreakAfter: 'avoid'
+              }
+            }}
+          >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <img
-                src='/images/logos/logo-g.png'
-                alt='G Innovation Logo'
-                style={{
-                  width: 120,
-                  height: 60,
-                  objectFit: 'contain'
-                }}
-              />
-              <Typography variant='h6' sx={{ fontWeight: 'bold', fontSize: '12pt', '@media print': { fontSize: '11pt' } }}>
+              <img src='/images/logos/logo-g.png' alt='G Innovation Logo' style={{ width: 120, height: 60 }} />
+              <Typography variant='h6' sx={{ fontWeight: 'bold', fontSize: '12pt' }}>
                 G Innovation Co.,Ltd.
               </Typography>
             </Box>
-            <Typography variant='h5' sx={{ fontWeight: 'bold', fontSize: '14pt', '@media print': { fontSize: '13pt' } }}>
+            <Typography variant='h5' sx={{ fontWeight: 'bold', fontSize: '14pt' }}>
               Service Report
             </Typography>
           </Box>
 
-          {/* Customer Information Table */}
-          <Box className="report-info page-break-inside-avoid" sx={{ mb: 3 }}>
-            {/* ... (Your customer info table is unchanged) ... */}
+          {/* Information Table */}
+          <Box sx={{ mb: 3, '@media print': { pageBreakAfter: 'avoid' } }}>
             <TableContainer sx={{ border: '1px solid black' }}>
-              <Table size='small' sx={{ tableLayout: 'fixed', '& td, & th': { border: '1px solid black', verticalAlign: 'top' } }}>
+              <Table size='small' sx={{ tableLayout: 'fixed' }}>
                 <TableBody>
                   {[
                     ['Project', projectName],
@@ -216,157 +186,162 @@ const PrintableServiceReport = forwardRef<HTMLDivElement, PrintableServiceReport
             </TableContainer>
           </Box>
 
-          {/* Main Report Table (Paginated) */}
+          {/* Main Report Table */}
           <Box sx={{ mb: 3 }}>
-            <table
-              className="main-report-table"
-              style={{
-                tableLayout: 'fixed',
-                width: '100%',
-                borderCollapse: 'collapse',
-                border: '1px solid black'
-              }}
-            >
-              <thead>
-                <tr style={{ backgroundColor: '#f0f0f0' }}>
-                  <th style={{ fontWeight: 'bold', textAlign: 'center', fontSize: '9pt', width: '15%', border: '1px solid black' }}>วันที่</th>
-                  <th style={{ fontWeight: 'bold', textAlign: 'center', fontSize: '9pt', width: '28%', border: '1px solid black' }}>รายละเอียดที่แจ้ง</th>
-                  <th style={{ fontWeight: 'bold', textAlign: 'center', fontSize: '9pt', width: '28%', border: '1px solid black' }}>สาเหตุของปัญหา</th>
-                  <th style={{ fontWeight: 'bold', textAlign: 'center', fontSize: '9pt', width: '28%', border: '1px solid black' }}>การแก้ไข/ดำเนินการ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reports.map((reportItem, index) => (
-                  <tr key={reportItem.id || index}>
-                    <td style={{ textAlign: 'center', whiteSpace: 'nowrap', border: '1px solid black', padding: '6px' }}>
-                      {formatDate(reportItem.reportDate)}
-                    </td>
-                    <td style={{ textAlign: 'left', border: '1px solid black', padding: '6px' }}>
-                      {reportItem.complain || ''}
-                    </td>
-                    <td style={{ textAlign: 'left', border: '1px solid black', padding: '6px' }}>
-                      {reportItem.causesOfFailure || ''}
-                    </td>
-                    <td style={{ textAlign: 'left', border: '1px solid black', padding: '6px' }}>
-                      {reportItem.actionTaken || ''}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <TableContainer sx={{ border: '1px solid black' }}>
+              <Table size='small' className='main-report-table' sx={{ tableLayout: 'fixed', width: '100%' }}>
+                <TableHead
+                  sx={{
+                    '@media print': {
+                      display: 'table-header-group'
+                    }
+                  }}
+                >
+                  <TableRow sx={{ backgroundColor: '#f0f0f0' }}>
+                    <TableCell align='center' sx={{ fontWeight: 'bold', width: '15%' }}>
+                      วันที่
+                    </TableCell>
+                    <TableCell align='center' sx={{ fontWeight: 'bold', width: '28%' }}>
+                      รายละเอียดที่แจ้ง
+                    </TableCell>
+                    <TableCell align='center' sx={{ fontWeight: 'bold', width: '28%' }}>
+                      สาเหตุของปัญหา
+                    </TableCell>
+                    <TableCell align='center' sx={{ fontWeight: 'bold', width: '28%' }}>
+                      การแก้ไข/ดำเนินการ
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody
+                  sx={{
+                    '@media print': {
+                      display: 'table-row-group'
+                    }
+                  }}
+                >
+                  {reports.map((reportItem, index) => (
+                    <TableRow
+                      key={reportItem.id || index}
+                      sx={{
+                        '@media print': {
+                          pageBreakInside: 'avoid',
+                          breakInside: 'avoid'
+                        }
+                      }}
+                    >
+                      <TableCell align='center'>{formatDate(reportItem.reportDate)}</TableCell>
+                      <TableCell>{reportItem.complain || ''}</TableCell>
+                      <TableCell>{reportItem.causesOfFailure || ''}</TableCell>
+                      <TableCell>{reportItem.actionTaken || ''}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </Box>
 
-          {/* Status, Signature and Service Staff Section - This section should be together */}
-          <Box className="page-break-inside-avoid">
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-              <Grid item xs={4}>
-                <Typography variant='body1' sx={{ fontWeight: 'bold', mb: 1 }}>
-                  Status of work
-                </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                  <FormControlLabel
-                    control={<Checkbox size='small' checked />}
-                    label='Completed'
-                    sx={{ '& .MuiFormControlLabel-label': { fontSize: '9pt' } }}
-                  />
-                  <FormControlLabel
-                    control={<Checkbox size='small' />}
-                    label='Follow-up'
-                    sx={{ '& .MuiFormControlLabel-label': { fontSize: '9pt' } }}
-                  />
-                </Box>
-              </Grid>
-              <Grid item xs={8}>
-                <TableContainer sx={{ border: '1px solid black' }}>
-                  <Table size='small' sx={{ '& td, & th': { border: '1px solid black', verticalAlign: 'top' } }}>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: 'bold', width: '30%' }}>Report by</TableCell>
-                        <TableCell sx={{ width: '70%' }}>{reporterName || 'N/A'}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: 'bold' }}>Date</TableCell>
-                        <TableCell>{formatDate(new Date().toISOString().split('T')[0])}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: 'bold' }}>Remark</TableCell>
-                        <TableCell sx={{ height: '40px' }}></TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: 'bold' }}>Customer sign</TableCell>
-                        <TableCell sx={{ height: '60px' }}></TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Grid>
-            </Grid>
-
-            {/* Service Staff Table */}
-            <Box sx={{ mb: 3 }}>
-              <Typography variant='body1' sx={{ fontWeight: 'bold', mb: 1 }}>
-                Service staff and working time
-              </Typography>
-              <TableContainer sx={{ border: '1px solid black' }}>
-                <Table className="service-staff-table" size='small' sx={{ tableLayout: 'fixed', width: '100%', borderCollapse: 'collapse' }}>
-                  <TableHead sx={{ bgcolor: '#f0f0f0' }}>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 'bold', textAlign: 'center', width: '20%' }}>Engineer name</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', textAlign: 'center', width: '10%' }}>Date</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', textAlign: 'center', width: '10%' }}>Start</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', textAlign: 'center', width: '10%' }}>End</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', textAlign: 'center', width: '15%' }}>Working hours</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', textAlign: 'center', width: '15%' }}>Travelling hours</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', textAlign: 'center', width: '20%' }}>Charging</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {serviceStaff.length > 0 ? (
-                      serviceStaff.map((staff, index) => (
-                        <TableRow key={index}>
-                          <TableCell sx={{ height: '40px' }}>{staff.name}</TableCell>
-                          <TableCell sx={{ textAlign: 'center' }}>{staff.date}</TableCell>
-                          <TableCell sx={{ textAlign: 'center' }}>{staff.start}</TableCell>
-                          <TableCell sx={{ textAlign: 'center' }}>{staff.end}</TableCell>
-                          <TableCell sx={{ textAlign: 'center' }}>{staff.workingHours}</TableCell>
-                          <TableCell sx={{ textAlign: 'center' }}>{staff.travellingHours}</TableCell>
-                          <TableCell sx={{ textAlign: 'center' }}>{staff.charging}</TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-
-                      <TableRow>
-                        <TableCell sx={{ height: '40px' }} colSpan={7}>
-                          No service staff data available.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    <TableRow>
-                      <TableCell colSpan={6} align='right' sx={{ fontWeight: 'bold', paddingRight: 2 }}>
-                        Approved by :
-                      </TableCell>
-                      <TableCell sx={{ height: '60px' }}></TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </TableContainer>
+          {/* Signature and Staff Section */}
+          <Box sx={{ pageBreakInside: 'avoid', mt: 4 }}>
+            {/* ส่วนของลายเซ็นและชื่อ */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
+              <Box sx={{ textAlign: 'center', width: '30%' }}>
+                <Box sx={{ borderBottom: '1px solid black', height: 40, mb: 1 }} />
+                <Typography sx={{ fontSize: '0.8rem' }}>ผู้รับบริการ</Typography>
+                <Typography sx={{ fontSize: '0.8rem' }}>(ผู้รับทราบผลการปฏิบัติงาน)</Typography>
+              </Box>
+              <Box sx={{ textAlign: 'center', width: '30%' }}>
+                <Box sx={{ borderBottom: '1px solid black', height: 40, mb: 1 }} />
+                <Typography sx={{ fontSize: '0.8rem' }}>ผู้ปฏิบัติงาน</Typography>
+                <Typography sx={{ fontSize: '0.8rem' }}>(เจ้าหน้าที่บริการ)</Typography>
+              </Box>
             </Box>
+
+            {/* ตารางข้อมูลเจ้าหน้าที่ */}
+            <Typography variant='body1' sx={{ fontWeight: 'bold', mb: 1, fontSize: '0.9rem' }}>
+              เจ้าหน้าที่ผู้ปฏิบัติงาน
+            </Typography>
+            <TableContainer sx={{ border: '1px solid black' }}>
+              <Table size='small' sx={{ tableLayout: 'fixed' }}>
+                <TableHead
+                  sx={{
+                    '@media print': {
+                      display: 'table-header-group'
+                    }
+                  }}
+                >
+                  <TableRow sx={{ backgroundColor: '#f0f0f0' }}>
+                    <TableCell align='center' sx={{ width: '25%', fontWeight: 'bold' }}>
+                      ชื่อ-สกุล
+                    </TableCell>
+                    <TableCell align='center' sx={{ width: '25%', fontWeight: 'bold' }}>
+                      วันที่
+                    </TableCell>
+                    <TableCell align='center' sx={{ width: '15%', fontWeight: 'bold' }}>
+                      เวลาเข้า
+                    </TableCell>
+                    <TableCell align='center' sx={{ width: '15%', fontWeight: 'bold' }}>
+                      เวลาออก
+                    </TableCell>
+                    <TableCell align='center' sx={{ width: '20%', fontWeight: 'bold' }}>
+                      หมายเหตุ
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody
+                  sx={{
+                    '@media print': {
+                      display: 'table-row-group'
+                    }
+                  }}
+                >
+                  {serviceStaff.length > 0 ? (
+                    serviceStaff.map((staff, index) => (
+                      <TableRow
+                        key={index}
+                        sx={{
+                          '@media print': {
+                            pageBreakInside: 'avoid',
+                            breakInside: 'avoid'
+                          }
+                        }}
+                      >
+                        <TableCell>
+                          {staff.name} {staff.username}
+                        </TableCell>
+                        <TableCell>{staff.date || 'N/A'}</TableCell>
+                        <TableCell>{staff.start || 'N/A'}</TableCell>
+                        <TableCell>{staff.end || 'N/A'}</TableCell>
+                        <TableCell>{staff.charging || 'N/A'}</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} align='center'>
+                        ไม่มีข้อมูลเจ้าหน้าที่
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </Box>
 
           {/* Footer */}
-          <Box className="report-footer" sx={{
-            borderTop: '2px solid #000',
-            pt: 2,
-            textAlign: 'center',
-            fontSize: '8pt',
-            color: 'text.secondary',
-            '@media print': {
-              pageBreakInside: 'avoid',
-              marginTop: '1cm',
-              paddingTop: '0.5cm',
-              fontSize: '7pt'
-            }
-          }}>
+          <Box
+            sx={{
+              borderTop: '2px solid #000',
+              pt: 2,
+              textAlign: 'center',
+              fontSize: '8pt',
+              color: 'text.secondary',
+              '@media print': {
+                pageBreakInside: 'avoid',
+                marginTop: '1cm',
+                paddingTop: '0.5cm',
+                fontSize: '7pt'
+              }
+            }}
+          >
             <Typography variant='body2' sx={{ fontSize: 'inherit', mb: 0.5 }}>
               G INNOVATION CO.,LTD. 238/5 Ratchadapisek Rd., kwang Huai khwang, Khet Huai khwang, Bangkok 10320
             </Typography>
@@ -380,18 +355,6 @@ const PrintableServiceReport = forwardRef<HTMLDivElement, PrintableServiceReport
   }
 )
 
-PrintableServiceReport.displayName = 'PrintableServiceReport';
+PrintableServiceReport.displayName = 'PrintableServiceReport'
 
 export default PrintableServiceReport
-
-/* Move the following CSS to a separate file, e.g., PrintableServiceReport.css, and import it in this file:
-
-@media print {
-  .main-report-table thead {
-    display: table-header-group !important;
-  }
-  .main-report-table tfoot {
-    display: table-footer-group !important;
-  }
-}
-*/

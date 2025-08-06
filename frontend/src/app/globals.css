@@ -32,193 +32,53 @@ html {
 body {
   font-family: 'Sarabun', sans-serif;
 }
+/* ======== PDF / Print Styling ======== */
+/* global.css */
 
 @media print {
-  @page {
-    size: A4;
-    margin: 1.2cm;
-    /* ลด margin default สำหรับการพิมพ์ */
+  #pdf-content {
+    width: 100%;
+    padding: 10mm;
   }
- .main-report-table thead {
-    display: table-header-group !important;
+
+  .main-report-table {
+    width: 100%;
+    border-collapse: collapse;
   }
+
+  .main-report-table thead {
+    display: table-header-group;
+  }
+
   .main-report-table tfoot {
-    display: table-footer-group !important;
+    display: table-footer-group;
   }
+
   .main-report-table tr {
     page-break-inside: avoid;
     break-inside: avoid;
   }
-  .report-logo {
-    inline-size: 40px !important;
-    /* Adjust as needed */
-    block-size: 40px !important;
-    /* Adjust as needed */
-    /* Add any other print-specific adjustments, e.g., margin-top, margin-bottom */
-    margin-block-end: 5px;
-    /* Example: add a small margin below */
-  }
-
-  /* You might also want to adjust other elements for print */
-  h2,
-  h5,
-  h6 {
-    font-size: 1em !important;
-    /* Make headings smaller for print */
-  }
-
-  p,
-  li {
-    font-size: 0.8em !important;
-    /* Make text smaller for print */
-  }
-
-  /* ซ่อน elements ที่ไม่ควรพิมพ์ */
-  .print\:hidden {
+    /* ซ่อน Sidebar Menu */
+  /* ซ่อน Sidebar Menu */
+  .ts-vertical-nav-root {
     display: none !important;
   }
 
-  /* ปรับ style ของ body หรือ main container สำหรับการพิมพ์ */
-  body {
-    margin: 0 !important;
-    padding: 0 !important;
-    background-color: #fff !important;
-    color: #000 !important;
-    box-shadow: none !important;
-  }
-
-  /* Target main containers that might be wrapped in print-specific components */
-  .max-w-4xl.mx-auto {
-    inline-size: 100% !important;
-    max-inline-size: none !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-    border: none !important;
-    padding: 1cm !important;
-    /* ปรับ padding ให้สอดคล้องกับ Box หลักใน component */
-  }
-
-  /* บังคับให้ elements แสดงผล */
-  .print\:block {
-    display: block !important;
-  }
-
-  /* ควบคุมการขึ้นหน้าใหม่ */
-  .page-break-after {
-    page-break-after: always !important;
-  }
-
-  .page-break-before {
-    page-break-before: always !important;
-  }
-
-  .no-break {
-    page-break-inside: avoid !important;
-  }
-
-  /* ตาราง: ทำให้พอดีกับหน้ากระดาษและข้อความ wrap ได้ */
-  table {
-    inline-size: 100% !important;
-    table-layout: fixed !important;
-  }
-
-  th,
-  td {
-    white-space: normal !important;
-    word-break: break-word !important;
-  }
-
-  /* กำหนดเส้นขอบตารางให้ชัดเจนขึ้นเมื่อพิมพ์ */
-  table,
-  th,
-  td {
-    border-collapse: collapse !important;
-    border: 1px solid #000 !important;
-  }
-
-  /* จัดการสีพื้นหลังของ TableHead เมื่อพิมพ์ */
-  thead tr {
-    background-color: #f0f0f0 !important;
-  }
-
-  /* ตรวจสอบให้แน่ใจว่าสีข้อความและพื้นหลังใน print mode เป็น light theme */
-  * {
-    color: #000 !important;
-    /* background-color: transparent !important; */
-  }
-
-  thead tr {
-    background-color: #f0f0f0 !important;
-    /* ใช้ !important เพื่อให้แน่ใจว่าทับได้ */
-  }
-
-  /* สำหรับ Box ที่มี bgcolor ให้คงสีขาวไว้ */
-  .MuiBox-root {
-    background-color: #ffffff !important;
-  }
-
-
-  /* Hide elements by their roles or common class names if they aren't explicit print-hidden */
-  .MuiAppBar-root,
-  .MuiDrawer-root,
-  .MuiFab-root,
-  .MuiSpeedDial-root,
-  .MuiTooltip-popper,
-  .MuiAlert-root,
-  .MuiSnackbar-root,
-  .MuiDialog-root:not(.print-dialog),
-  .MuiModal-root {
+  /* ซ่อน Top Bar / Header */
+  .ts-vertical-layout-header {
     display: none !important;
   }
-
-  /* ถ้ามี pagination ในตาราง ก็ควรซ่อนไป */
-  .MuiTablePagination-root {
+ .MuiBox-root.mui-126th59 {
     display: none !important;
   }
-
-  /* ปรับขนาดฟอนต์โดยรวมสำหรับเนื้อหาในเอกสารพิมพ์ */
-  html,
-  body {
-    font-size: 9pt !important;
-    /* ลดขนาดฟอนต์ให้เล็กลงอีก */
+  .ts-vertical-layout-footer {
+    display: none !important;
   }
-
-  /* ถ้ามี padding หรือ margin ที่อาจทำให้เกินหน้ากระดาษ */
-  .MuiBox-root,
-  .MuiPaper-root {
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  /* สำหรับรูปภาพในตาราง (ถ้ามี) */
-  img {
-    max-inline-size: 100% !important;
-    block-size: auto !important;
-  }
-
-  /* ให้หัวตารางขึ้นทุกหน้า */
-  table thead {
-    display: table-header-group !important;
-  }
-  table tfoot {
-    display: table-footer-group !important;
-  }
-
-  /* ห้ามใช้ page-break-inside กับ tr/tbody เพราะจะทำให้ browser ตัดหน้าไม่ได้ */
-  tr, tbody {
-    page-break-inside: auto !important;
-    break-inside: auto !important;
-  }
-
-  /* ป้องกันตารางขาดกลางหน้า */
-  table {
-    page-break-inside: auto !important;
-    break-inside: auto !important;
-  }
-
-  /* ป้องกัน header/footer ไม่ให้ขึ้นหน้าใหม่ลอย */
-  .report-header, .report-footer {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
+  /* ปรับให้เนื้อหาหลักขยายเต็มหน้า */
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
   }
 }
+
+

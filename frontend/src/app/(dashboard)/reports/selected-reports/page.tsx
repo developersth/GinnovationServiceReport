@@ -3,55 +3,38 @@
 
 import React, { useEffect, useState, useRef } from 'react'
 
-import { useSearchParams, useRouter } from 'next/navigation' // Import useRouter
+import { useSearchParams, useRouter } from 'next/navigation'
 
-import {
-  Box,
-  Typography,
-  CircularProgress,
-  Button,
-  TableContainer,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  Paper,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem
-} from '@mui/material'
+import { Box, Typography, CircularProgress, Button, FormControl, InputLabel, Select, MenuItem } from '@mui/material'
 import PrintIcon from '@mui/icons-material/Print'
-import ArrowBackIcon from '@mui/icons-material/ArrowBack' // Import the back arrow icon
-
-import html2canvas from 'html2canvas'
-
-import jsPDF from 'jspdf'
-
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import html2pdf from 'html2pdf.js'
 import dayjs from 'dayjs'
 
-import PrintableServiceReport from '@/views/report/PrintableServiceReport' // Import the component for PDF generation
-import { getServiceReportById, getProjectById, getProjects } from '@/libs/api/data'
-import type { ServiceReport, Project } from '@/types'
+import PrintableServiceReport from '@/views/report/PrintableServiceReport'
+import { getServiceReportById, getProjectById, getProjects, getUsers } from '@/libs/api/data'
+import type { ServiceReport, Project, User } from '@/types'
+import { formatDate } from '@/utils'
 
-// Import PDF generation libraries
-
-// Helper function to format date using dayjs
-function formatDate(dateString: string | Date | undefined): string {
-  if (!dateString) return ''
-
-  return dayjs(dateString).format('DD/MM/YYYY')
+// สร้าง type สำหรับ StaffRow ที่จะใช้งาน
+interface ServiceStaffRow extends User {
+  date?: string
+  start?: string
+  end?: string
+  workingHours?: string
+  travellingHours?: string
+  charging?: string
 }
 
 export default function SelectedReportsPage() {
   const searchParams = useSearchParams()
-  const router = useRouter() // Initialize useRouter
+  const router = useRouter()
   const reportIdsParam = searchParams.get('ids')
 
-  const [allReports, setAllReports] = useState<ServiceReport[]>([]) // Store all fetched reports
-  const [allProjects, setAllProjects] = useState<Project[]>([]) // Store all projects for the combobox
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('') // State for selected project in combobox
+  const [allReports, setAllReports] = useState<ServiceReport[]>([])
+  const [allProjects, setAllProjects] = useState<Project[]>([])
+  const [allUsers, setAllUsers] = useState<User[]>([])
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -81,13 +64,16 @@ export default function SelectedReportsPage() {
       try {
         const fetchedReports: ServiceReport[] = []
         const fetchedProjectsMap = new Map<string, Project>()
-
-        // Fetch all projects initially for the combobox
         const projectsData = await getProjects()
+        const usersData = await getUsers()
 
         if (projectsData) {
           setAllProjects(projectsData)
           projectsData.forEach(p => fetchedProjectsMap.set(p.id, p))
+        }
+
+        if (usersData) {
+          setAllUsers(usersData)
         }
 
         for (const id of ids) {
@@ -96,31 +82,21 @@ export default function SelectedReportsPage() {
           if (reportData) {
             fetchedReports.push(reportData)
 
-            // Ensure project for this report is in the map, if not already fetched by getAllProjects
             if (reportData.projectId && !fetchedProjectsMap.has(reportData.projectId)) {
               const projectData = await getProjectById(reportData.projectId)
 
               if (projectData) {
                 fetchedProjectsMap.set(reportData.projectId, projectData)
-              } else {
-                console.warn(
-                  `[SelectedReportsPage] Project with ID ${reportData.projectId} not found for report ${id}.`
-                )
               }
             }
-          } else {
-            console.warn(`[SelectedReportsPage] Service Report with ID ${id} not found.`)
           }
         }
 
-        setAllReports(fetchedReports) // Store all reports
+        setAllReports(fetchedReports)
 
-        // If there's a specific project ID in the first report, pre-select it
         if (fetchedReports.length > 0 && fetchedReports[0].projectId) {
           setSelectedProjectId(fetchedReports[0].projectId)
         } else if (projectsData.length > 0) {
-          // If no report has a project ID, or no reports, select the first project by default
-          // You might want to set a default "All" or no selection here if preferable.
           setSelectedProjectId(projectsData[0].id)
         }
       } catch (err) {
@@ -135,41 +111,31 @@ export default function SelectedReportsPage() {
   }, [reportIdsParam])
 
   const handlePrintPdf = async () => {
-    if (reportRef.current) {
-      const canvas = await html2canvas(reportRef.current, {
-        scale: 2,
-        useCORS: true,
-        logging: true,
-        backgroundColor: '#ffffff'
+    const element = reportRef.current
+
+    if (!element) return
+
+    html2pdf()
+      .set({
+        margin: 0.5,
+        filename: `Service_Reports_${dayjs().format('YYYYMMDD_HHmmss')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true
+        },
+        jsPDF: {
+          unit: 'in',
+          format: 'a4',
+          orientation: 'portrait'
+        }
       })
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.8)
-
-      const pdf = new jsPDF('p', 'mm', 'a4')
-      const imgWidth = 210
-      const pageHeight = 297
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
-      let heightLeft = imgHeight
-      let position = 0
-
-      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
-      heightLeft -= pageHeight
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight
-        pdf.addPage()
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
-        heightLeft -= pageHeight
-      }
-
-      pdf.save(`Service_Reports_${dayjs().format('YYYYMMDD_HHmmss')}.pdf`)
-    } else {
-      console.error('[SelectedReportsPage] Report reference is null. Cannot generate PDF.')
-    }
+      .from(element)
+      .save()
   }
 
   const handleBackClick = () => {
-    router.back() // Go back to the previous page
+    router.back()
   }
 
   if (loading) {
@@ -201,28 +167,43 @@ export default function SelectedReportsPage() {
     )
   }
 
-  // Find the project for the PrintableServiceReport based on selectedProjectId
-  // This ensures the PDF header reflects the chosen project from the combobox
   const projectForPrintableReport = allProjects.find(p => p.id === selectedProjectId)
+
+  // เตรียมข้อมูล Staff สำหรับส่งไปที่ PrintableServiceReport
+  const staffForPrintableReport: ServiceStaffRow[] = allReports.reduce<ServiceStaffRow[]>((acc, report) => {
+    if (report.reportedBy && allUsers.length > 0) {
+      const staffUser = allUsers.find(user => user.id === report.reportedBy)
+
+      if (staffUser) {
+        // หากต้องการข้อมูลอื่นๆ ของ staff เช่น วันที่, เวลาเข้า-ออก ก็สามารถเพิ่มได้ในส่วนนี้
+        acc.push({
+          ...staffUser,
+          date: formatDate(report.reportDate)
+        })
+      }
+    }
+
+    return acc
+  }, [])
+
+  // Filter ให้เหลือเฉพาะข้อมูลที่ไม่ซ้ำกัน
+  const uniqueStaff = staffForPrintableReport.filter(
+    (staff, index, self) => index === self.findIndex(s => s.id === staff.id)
+  )
 
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant='h5' component='h1'>
-          รายงาน Service Report ที่เลือก
-        </Typography>
+        <Typography variant='h5'>รายงาน Service Report ที่เลือก</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {/* Back Button */}
           <Button variant='outlined' color='secondary' startIcon={<ArrowBackIcon />} onClick={handleBackClick}>
             ย้อนกลับ
           </Button>
 
-          {/* Project Combobox */}
           <FormControl sx={{ minWidth: 200 }} size='small'>
             <InputLabel id='project-select-label'>เลือกโปรเจกต์</InputLabel>
             <Select
               labelId='project-select-label'
-              id='project-select'
               value={selectedProjectId}
               label='เลือกโปรเจกต์'
               onChange={e => setSelectedProjectId(e.target.value)}
@@ -235,56 +216,31 @@ export default function SelectedReportsPage() {
             </Select>
           </FormControl>
 
-          {/* Print Button */}
           <Button variant='contained' color='primary' startIcon={<PrintIcon />} onClick={handlePrintPdf}>
             พิมพ์รายงาน PDF
           </Button>
         </Box>
       </Box>
 
-      {/* Hidden component for PDF generation */}
-      <div ref={reportRef} style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
-        {/* Pass ALL fetched reports to PrintableServiceReport, but the project for its header comes from selectedProjectId */}
-        <PrintableServiceReport reports={allReports} project={projectForPrintableReport || undefined} />
-      </div>
-
-      {/* Display a simplified view of selected reports on screen (optional) */}
-      <TableContainer component={Paper} sx={{ overflowX: 'auto', mb: 3 }}>
-        <Table size='small'>
-          <TableHead>
-            <TableRow>
-              <TableCell>รหัส</TableCell>
-              <TableCell>โปรเจกต์</TableCell>
-              <TableCell>วันที่แจ้ง</TableCell>
-              <TableCell>Complain</TableCell>
-              <TableCell>สาเหตุ</TableCell>
-              <TableCell>การแก้ไข</TableCell>
-              <TableCell>สถานะ</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {/* Now mapping over allReports, not displayedReports */}
-            {allReports.map(reportItem => {
-              const reportProject = allProjects.find(p => p.id === reportItem.projectId)
-
-              return (
-                <TableRow key={reportItem.id}>
-                  <TableCell>{reportItem.id}</TableCell>
-                  <TableCell>{reportProject?.name || 'N/A'}</TableCell>
-                  <TableCell>{formatDate(reportItem.reportDate)}</TableCell>
-                  <TableCell>{reportItem.complain}</TableCell>
-                  <TableCell>{reportItem.causesOfFailure}</TableCell>
-                  <TableCell>{reportItem.actionTaken}</TableCell>
-                  <TableCell>{reportItem.status}</TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <Typography variant='body2' color='text.secondary'>
-        (เนื้อหาที่แสดงด้านบนเป็นเพียงสรุปย่อ, รายงานฉบับเต็มจะอยู่ในไฟล์ PDF)
-      </Typography>
+      <Box sx={{ p: 3 }}>
+        {/* ... โค้ดส่วนอื่นๆ ... */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+          {' '}
+          {/* เพิ่ม Box นี้ */}
+          <div
+            ref={reportRef}
+            style={{ width: '210mm', minHeight: '297mm', padding: '10mm', backgroundColor: 'white' }}
+          >
+            {/* ส่งข้อมูล Staff ไปให้ PrintableServiceReport ด้วย */}
+            <PrintableServiceReport
+              reports={allReports}
+              project={projectForPrintableReport || undefined}
+              serviceStaff={uniqueStaff}
+            />
+          </div>
+        </Box>
+        {/* ... โค้ดส่วนอื่นๆ ... */}
+      </Box>
     </Box>
   )
 }
