@@ -4,17 +4,14 @@
 import { useState, useEffect } from 'react'
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from 'recharts'
-import { Typography, Box, CircularProgress, Alert } from '@mui/material' // Removed Button
-import { useTheme } from '@mui/material/styles' // Import useTheme
+import { Typography, Box, CircularProgress, Alert, Grid, Paper, Card, CardContent, Avatar, Stack } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 
 // --- Import MUI Icons ---
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined' // For reports
-import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined' // For projects
-import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined' // For status
-// Removed LightModeIcon and DarkModeIcon as toggle button is removed
-
-// No longer importing colorSchemes directly here, as useTheme provides the current palette.
-// import colorSchemes from '../../@core/theme/colorSchemes' // This line might no longer be needed
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
+import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
+import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined'
+import AccessTimeIcon from '@mui/icons-material/AccessTime'
 
 import { getServiceReports, getProjects } from '../../libs/api/data'
 import type { ServiceReport, Project } from '../../types'
@@ -25,53 +22,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Use the useTheme hook to get the current theme object
   const theme = useTheme()
-
-  // If you are using @mui/material-next or Joy UI for color schemes:
-  // Use the palette mode from the theme object
-  const currentThemeMode = theme.palette.mode // 'light' or 'dark'
-
-  // Access the palette from the current theme object
-  // theme.palette will automatically be the correct light or dark palette based on the active theme mode
-  const currentPalette = theme.palette
-
-  // Dynamically define themeColors based on currentPalette
-  const themeColors = {
-    // Main accent colors from MUI palette for bars
-    primaryBar: currentPalette.primary.main,
-    secondaryBar: currentPalette.success.main,
-
-    // Dashboard structure colors
-    pageBackground: currentPalette.background.default,
-    cardBackground: currentPalette.background.paper,
-    cardBorder: currentPalette.divider,
-
-    // Adjust shadow based on the actual theme mode
-    cardBoxShadow: currentThemeMode === 'light' ? '0 4px 12px rgba(0, 0, 0, 0.05)' : '0 4px 12px rgba(0, 0, 0, 0.3)',
-    chartBackground: currentPalette.background.paper,
-
-    // Text colors
-    textColorPrimary: currentPalette.text.primary,
-    textColorSecondary: currentPalette.text.secondary,
-
-    // Chart specific colors
-    gridAndAxis: currentPalette.divider,
-    axisLabelColor: currentPalette.text.secondary,
-    tooltipBackground: currentPalette.background.paper,
-    tooltipBorder: currentPalette.divider,
-    tooltipTextColor: currentPalette.text.primary,
-    legendTextColor: currentPalette.text.primary,
-
-    // Icon background and foreground colors - using MUI palette where possible for dark mode compatibility
-    // These will now correctly pull from the currentPalette (light or dark)
-    iconBgGreen: currentPalette.success.lightOpacity,
-    iconGreen: currentPalette.success.main,
-    iconBgOrange: currentPalette.warning.lightOpacity,
-    iconOrange: currentPalette.warning.main,
-    iconBgPurple: currentPalette.primary.lighterOpacity,
-    iconPurple: currentPalette.primary.main
-  }
 
   useEffect(() => {
     const loadData = async () => {
@@ -91,28 +42,12 @@ export default function DashboardPage() {
     loadData()
   }, [])
 
-  const getChartYear = () => {
-    if (serviceReports && serviceReports.length > 0) {
-      const firstReportDate = serviceReports[0].reportDate
-
-      if (firstReportDate) {
-        return new Date(firstReportDate).getFullYear()
-      }
-    }
-
-    return new Date().getFullYear()
-  }
-
-  // Helper function to group reports by project
   function getReportsByProjectData(serviceReports: ServiceReport[], projects: Project[]) {
-    // Create a map of projectId to project name for quick lookup
     const projectIdToName: Record<string, string> = {}
 
     projects.forEach(project => {
       projectIdToName[project.id] = project.name
     })
-
-    // Count reports per projectId
     const projectReportCounts: Record<string, number> = {}
 
     serviceReports.forEach(report => {
@@ -121,25 +56,15 @@ export default function DashboardPage() {
       }
     })
 
-    // Return array for chart: { name, reports }
     return Object.entries(projectReportCounts).map(([projectId, count]) => ({
       name: projectIdToName[projectId] || 'Unknown',
       reports: count
     }))
   }
 
-  const reportsByProjectData = getReportsByProjectData(serviceReports, projects)
-  const reportsByMonthData = getReportsByMonthData(serviceReports)
-  const chartYear = getChartYear()
-
-  // Helper function to group reports by month
   function getReportsByMonthData(serviceReports: ServiceReport[]) {
     const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
-
-    const year = serviceReports[0]?.reportDate
-      ? new Date(serviceReports[0].reportDate).getFullYear()
-      : new Date().getFullYear()
-
+    const year = new Date().getFullYear()
     const monthlyCounts = Array(12).fill(0)
 
     serviceReports.forEach(report => {
@@ -156,19 +81,50 @@ export default function DashboardPage() {
     }))
   }
 
+  function getAnnualReportCounts(serviceReports: ServiceReport[]) {
+    const currentYear = new Date().getFullYear()
+    const previousYear = currentYear - 1
+    let currentYearCount = 0
+    let previousYearCount = 0
+
+    serviceReports.forEach(report => {
+      const reportYear = new Date(report.reportDate).getFullYear()
+
+      if (reportYear === currentYear) {
+        currentYearCount++
+      } else if (reportYear === previousYear) {
+        previousYearCount++
+      }
+    })
+
+    return {
+      currentYear,
+      previousYear,
+      currentYearCount,
+      previousYearCount
+    }
+  }
+
+  // --- NEW: Function to prepare data for annual chart ---
+  function getAnnualReportsChartData(serviceReports: ServiceReport[]) {
+    const { currentYear, previousYear, currentYearCount, previousYearCount } = getAnnualReportCounts(serviceReports)
+
+    return [
+      { name: `ปี ${previousYear}`, reports: previousYearCount },
+      { name: `ปี ${currentYear}`, reports: currentYearCount }
+    ]
+  }
+
+  const reportsByProjectData = getReportsByProjectData(serviceReports, projects)
+  const reportsByMonthData = getReportsByMonthData(serviceReports)
+  const annualReportCounts = getAnnualReportCounts(serviceReports)
+  const annualReportsChartData = getAnnualReportsChartData(serviceReports) // NEW: Data for annual chart
+
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '50vh',
-          backgroundColor: themeColors.pageBackground
-        }}
-      >
-        <CircularProgress sx={{ color: themeColors.textColorPrimary }} />
-        <Typography variant='h6' sx={{ ml: 2, color: themeColors.textColorPrimary }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <CircularProgress />
+        <Typography variant='h6' sx={{ ml: 2 }}>
           กำลังโหลดข้อมูล...
         </Typography>
       </Box>
@@ -177,223 +133,194 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <Box sx={{ p: 4, backgroundColor: themeColors.pageBackground }}>
+      <Box sx={{ p: 4 }}>
         <Alert severity='error'>ข้อผิดพลาด: {error}</Alert>
       </Box>
     )
   }
 
   return (
-    <div
-      className='p-4'
-      style={{
-        backgroundColor: themeColors.pageBackground,
-        minHeight: '100vh',
-        transition: 'background-color 0.3s ease-in-out'
-      }}
-    >
-      {/* Removed the theme toggle button */}
+    <Box sx={{ p: 4, bgcolor: 'background.default', minHeight: '100vh' }}>
+      <Typography variant='h4' component='h1' gutterBottom sx={{ mb: 4, fontWeight: 600 }}>
+        Dashboard
+      </Typography>
 
       {/* Info Cards */}
-      <section className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-6'>
-        {/* Card 1: Total Service Reports */}
-        <div
-          className='p-4 rounded-lg'
-          style={{
-            backgroundColor: themeColors.cardBackground,
-            border: `1px solid ${themeColors.cardBorder}`,
-            boxShadow: themeColors.cardBoxShadow,
-            transition: 'background-color 0.3s ease-in-out, border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out'
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, marginBottom: 1 }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                backgroundColor: themeColors.iconBgPurple,
-                transition: 'background-color 0.3s ease-in-out'
-              }}
-            >
-              <DescriptionOutlinedIcon sx={{ color: themeColors.iconPurple, fontSize: '1.25rem' }} />
-            </Box>
-            <p
-              className='text-xl'
-              style={{ color: themeColors.textColorSecondary, transition: 'color 0.3s ease-in-out' }}
-            >
-              จำนวนรายงานบริการทั้งหมด
-            </p>
-          </Box>
-          <p
-            className='text-2xl font-bold'
-            style={{ color: themeColors.textColorPrimary, transition: 'color 0.3s ease-in-out' }}
-          >
-            {serviceReports.length}
-          </p>
-        </div>
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} md={3}>
+          <Card raised sx={{ p: 2 }}>
+            <CardContent>
+              <Stack direction='row' alignItems='center' spacing={2}>
+                <Avatar sx={{ bgcolor: theme.palette.primary.main, width: 48, height: 48 }}>
+                  <DescriptionOutlinedIcon sx={{ color: theme.palette.primary.contrastText }} />
+                </Avatar>
+                <Box>
+                  <Typography variant='h5' component='p' sx={{ fontWeight: 'bold' }}>
+                    {serviceReports.length}
+                  </Typography>
+                  <Typography variant='subtitle1' color='text.secondary'>
+                    จำนวนรายงานทั้งหมด
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
 
-        {/* Card 2: Unique Projects Serviced */}
-        <div
-          className='p-4 rounded-lg'
-          style={{
-            backgroundColor: themeColors.cardBackground,
-            border: `1px solid ${themeColors.cardBorder}`,
-            boxShadow: themeColors.cardBoxShadow,
-            transition: 'background-color 0.3s ease-in-out, border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out'
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, marginBottom: 1 }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                backgroundColor: themeColors.iconBgOrange,
-                transition: 'background-color 0.3s ease-in-out'
-              }}
-            >
-              <BusinessOutlinedIcon sx={{ color: themeColors.iconOrange, fontSize: '1.25rem' }} />
-            </Box>
-            <p
-              className='text-xl'
-              style={{ color: themeColors.textColorSecondary, transition: 'color 0.3s ease-in-out' }}
-            >
-              จำนวนโครงการที่รับบริการ (ไม่ซ้ำกัน)
-            </p>
-          </Box>
-          <p
-            className='text-2xl font-bold'
-            style={{ color: themeColors.textColorPrimary, transition: 'color 0.3s ease-in-out' }}
-          >
-            {reportsByProjectData.length}
-          </p>
-        </div>
+        <Grid item xs={12} md={3}>
+          <Card raised sx={{ p: 2 }}>
+            <CardContent>
+              <Stack direction='row' alignItems='center' spacing={2}>
+                <Avatar sx={{ bgcolor: theme.palette.secondary.main, width: 48, height: 48 }}>
+                  <AccessTimeIcon sx={{ color: theme.palette.secondary.contrastText }} />
+                </Avatar>
+                <Box>
+                  <Typography variant='h5' component='p' sx={{ fontWeight: 'bold' }}>
+                    {annualReportCounts.currentYearCount}
+                  </Typography>
+                  <Typography variant='subtitle1' color='text.secondary'>
+                    รายงานปี {annualReportCounts.currentYear}
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
 
-        {/* Card 3: Latest Status */}
-        <div
-          className='p-4 rounded-lg'
-          style={{
-            backgroundColor: themeColors.cardBackground,
-            border: `1px solid ${themeColors.cardBorder}`,
-            boxShadow: themeColors.cardBoxShadow,
-            transition: 'background-color 0.3s ease-in-out, border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out'
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, marginBottom: 1 }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                backgroundColor: themeColors.iconBgGreen,
-                transition: 'background-color 0.3s ease-in-out'
-              }}
-            >
-              <CheckCircleOutlineOutlinedIcon sx={{ color: themeColors.iconGreen, fontSize: '1.25rem' }} />
-            </Box>
-            <p
-              className='text-xl'
-              style={{ color: themeColors.textColorSecondary, transition: 'color 0.3s ease-in-out' }}
-            >
-              สถานะล่าสุด
-            </p>
-          </Box>
-          <p
-            className='text-2xl font-bold'
-            style={{ color: themeColors.textColorPrimary, transition: 'color 0.3s ease-in-out' }}
-          >
-            อัปเดตแล้ว
-          </p>
-        </div>
-      </section>
+        <Grid item xs={12} md={3}>
+          <Card raised sx={{ p: 2 }}>
+            <CardContent>
+              <Stack direction='row' alignItems='center' spacing={2}>
+                <Avatar sx={{ bgcolor: theme.palette.info.main, width: 48, height: 48 }}>
+                  <BusinessOutlinedIcon sx={{ color: theme.palette.info.contrastText }} />
+                </Avatar>
+                <Box>
+                  <Typography variant='h5' component='p' sx={{ fontWeight: 'bold' }}>
+                    {reportsByProjectData.length}
+                  </Typography>
+                  <Typography variant='subtitle1' color='text.secondary'>
+                    จำนวนโครงการที่รับบริการ
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
 
-      {/* Reports by Project Chart */}
-      <section
-        className='p-4 rounded-lg mb-6'
-        style={{
-          backgroundColor: themeColors.chartBackground,
-          border: `1px solid ${themeColors.cardBorder}`,
-          boxShadow: themeColors.cardBoxShadow,
-          transition: 'background-color 0.3s ease-in-out, border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out'
-        }}
-      >
-        <h2
-          className='text-lg font-semibold mb-4'
-          style={{ color: themeColors.textColorPrimary, transition: 'color 0.3s ease-in-out' }}
-        >
-          รายงานบริการตามโครงการ
-        </h2>
-        <ResponsiveContainer width='100%' height={300}>
-          <BarChart data={reportsByProjectData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray='3 3' stroke={themeColors.gridAndAxis} vertical={false} />
-            <XAxis dataKey='name' stroke={themeColors.gridAndAxis} tick={{ fill: themeColors.axisLabelColor }} />
-            <YAxis stroke={themeColors.gridAndAxis} tick={{ fill: themeColors.axisLabelColor }} />
-            <Tooltip
-              contentStyle={{
-                background: themeColors.tooltipBackground,
-                border: `1px solid ${themeColors.tooltipBorder}`,
-                color: themeColors.tooltipTextColor,
-                borderRadius: '8px',
-                boxShadow: currentThemeMode === 'light' ? '0 2px 10px rgba(0,0,0,0.1)' : '0 2px 10px rgba(0,0,0,0.5)',
-                transition:
-                  'background-color 0.3s ease-in-out, border-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out'
-              }}
-              itemStyle={{ color: themeColors.tooltipTextColor }}
-            />
-            <Legend wrapperStyle={{ color: themeColors.legendTextColor, transition: 'color 0.3s ease-in-out' }} />
-            <Bar dataKey='reports' name='Reports' fill={themeColors.primaryBar} radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </section>
+        <Grid item xs={12} md={3}>
+          <Card raised sx={{ p: 2 }}>
+            <CardContent>
+              <Stack direction='row' alignItems='center' spacing={2}>
+                <Avatar sx={{ bgcolor: theme.palette.success.main, width: 48, height: 48 }}>
+                  <CheckCircleOutlineOutlinedIcon sx={{ color: theme.palette.success.contrastText }} />
+                </Avatar>
+                <Box>
+                  <Typography variant='h5' component='p' sx={{ fontWeight: 'bold' }}>
+                    อัปเดตแล้ว
+                  </Typography>
+                  <Typography variant='subtitle1' color='text.secondary'>
+                    สถานะข้อมูลล่าสุด
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
-      {/* Reports by Month Chart */}
-      <section
-        className='p-4 rounded-lg'
-        style={{
-          backgroundColor: themeColors.chartBackground,
-          border: `1px solid ${themeColors.cardBorder}`,
-          boxShadow: themeColors.cardBoxShadow,
-          transition: 'background-color 0.3s ease-in-out, border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out'
-        }}
-      >
-        <h2
-          className='text-lg font-semibold mb-4'
-          style={{ color: themeColors.textColorPrimary, transition: 'color 0.3s ease-in-out' }}
-        >
-          รายงานบริการรายเดือน (ปี {chartYear})
-        </h2>
-        <ResponsiveContainer width='100%' height={300}>
-          <BarChart data={reportsByMonthData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray='3 3' stroke={themeColors.gridAndAxis} vertical={false} />
-            <XAxis dataKey='name' stroke={themeColors.gridAndAxis} tick={{ fill: themeColors.axisLabelColor }} />
-            <YAxis stroke={themeColors.gridAndAxis} tick={{ fill: themeColors.axisLabelColor }} />
-            <Tooltip
-              contentStyle={{
-                background: themeColors.tooltipBackground,
-                border: `1px solid ${themeColors.tooltipBorder}`,
-                color: themeColors.tooltipTextColor,
-                borderRadius: '8px',
-                boxShadow: currentThemeMode === 'light' ? '0 2px 10px rgba(0,0,0,0.1)' : '0 2px 10px rgba(0,0,0,0.5)',
-                transition:
-                  'background-color 0.3s ease-in-out, border-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out'
-              }}
-              itemStyle={{ color: themeColors.tooltipTextColor }}
-            />
-            <Legend wrapperStyle={{ color: themeColors.legendTextColor, transition: 'color 0.3s ease-in-out' }} />
-            <Bar dataKey='reports' name='Reports' fill={themeColors.secondaryBar} radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </section>
-    </div>
+      {/* Reports by Project Chart and Reports by Month Chart */}
+      <Grid container spacing={3}>
+        <Grid item xs={12} lg={6}>
+          <Paper elevation={3} sx={{ p: 2 }}>
+            <Typography variant='h6' gutterBottom sx={{ color: 'text.primary' }}>
+              รายงานบริการตามโครงการ
+            </Typography>
+            <ResponsiveContainer width='100%' height={300}>
+              <BarChart data={reportsByProjectData} margin={{ top: 16, right: 16, bottom: 16, left: 0 }}>
+                <CartesianGrid strokeDasharray='3 3' stroke={theme.palette.divider} vertical={false} />
+                <XAxis
+                  dataKey='name'
+                  stroke={theme.palette.divider}
+                  tick={{ fill: theme.palette.text.secondary }}
+                  style={{ fontSize: 12 }}
+                />
+                <YAxis stroke={theme.palette.divider} tick={{ fill: theme.palette.text.secondary }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: theme.palette.background.paper,
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: '8px'
+                  }}
+                  itemStyle={{ color: theme.palette.text.primary }}
+                />
+                <Legend wrapperStyle={{ color: theme.palette.text.primary }} />
+                <Bar dataKey='reports' name='Reports' fill={theme.palette.primary.main} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} lg={6}>
+          <Paper elevation={3} sx={{ p: 2 }}>
+            <Typography variant='h6' gutterBottom sx={{ color: 'text.primary' }}>
+              รายงานบริการรายเดือน (ปี {annualReportCounts.currentYear})
+            </Typography>
+            <ResponsiveContainer width='100%' height={300}>
+              <BarChart data={reportsByMonthData} margin={{ top: 16, right: 16, bottom: 16, left: 0 }}>
+                <CartesianGrid strokeDasharray='3 3' stroke={theme.palette.divider} vertical={false} />
+                <XAxis
+                  dataKey='name'
+                  stroke={theme.palette.divider}
+                  tick={{ fill: theme.palette.text.secondary }}
+                  style={{ fontSize: 12 }}
+                />
+                <YAxis stroke={theme.palette.divider} tick={{ fill: theme.palette.text.secondary }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: theme.palette.background.paper,
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: '8px'
+                  }}
+                  itemStyle={{ color: theme.palette.text.primary }}
+                />
+                <Legend wrapperStyle={{ color: theme.palette.text.primary }} />
+                <Bar dataKey='reports' name='Reports' fill={theme.palette.secondary.main} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Paper>
+        </Grid>
+
+        {/* NEW: Annual Reports Chart */}
+        <Grid item xs={12}>
+          <Paper elevation={3} sx={{ p: 2 }}>
+            <Typography variant='h6' gutterBottom sx={{ color: 'text.primary' }}>
+              รายงานประจำปี: เปรียบเทียบจำนวนรายงาน
+            </Typography>
+            <ResponsiveContainer width='100%' height={300}>
+              <BarChart data={annualReportsChartData} margin={{ top: 16, right: 16, bottom: 16, left: 0 }}>
+                <CartesianGrid strokeDasharray='3 3' stroke={theme.palette.divider} vertical={false} />
+                <XAxis
+                  dataKey='name'
+                  stroke={theme.palette.divider}
+                  tick={{ fill: theme.palette.text.secondary }}
+                  style={{ fontSize: 12 }}
+                />
+                <YAxis stroke={theme.palette.divider} tick={{ fill: theme.palette.text.secondary }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: theme.palette.background.paper,
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: '8px'
+                  }}
+                  itemStyle={{ color: theme.palette.text.primary }}
+                />
+                <Legend wrapperStyle={{ color: theme.palette.text.primary }} />
+                <Bar dataKey='reports' name='จำนวนรายงาน' fill={theme.palette.primary.dark} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Paper>
+        </Grid>
+      </Grid>
+    </Box>
   )
 }
