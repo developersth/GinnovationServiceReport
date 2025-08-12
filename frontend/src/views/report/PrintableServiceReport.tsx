@@ -246,12 +246,13 @@ const PrintableServiceReport = forwardRef<HTMLDivElement, PrintableServiceReport
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
               <Box sx={{ textAlign: 'center', width: '30%' }}>
                 <Box sx={{ borderBottom: '1px solid black', height: 40, mb: 1 }} />
-                <Typography sx={{ fontSize: '0.8rem' }}>ผู้รับบริการ</Typography>
+                <Typography sx={{ fontSize: '0.8rem' }}>Customer Sign</Typography>
                 <Typography sx={{ fontSize: '0.8rem' }}>(ผู้รับทราบผลการปฏิบัติงาน)</Typography>
               </Box>
               <Box sx={{ textAlign: 'center', width: '30%' }}>
-                <Box sx={{ borderBottom: '1px solid black', height: 40, mb: 1 }} />
-                <Typography sx={{ fontSize: '0.8rem' }}>ผู้ปฏิบัติงาน</Typography>
+                <Typography sx={{ fontSize: '0.8rem' }}>{getName()}</Typography>
+                <Box sx={{ borderBottom: '1px solid black', height: 5, mb: 1 }} />
+                <Typography sx={{ fontSize: '0.8rem' }}>Report by</Typography>
                 <Typography sx={{ fontSize: '0.8rem' }}>(เจ้าหน้าที่บริการ)</Typography>
               </Box>
             </Box>

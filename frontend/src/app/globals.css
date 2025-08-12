@@ -79,6 +79,44 @@ body {
     margin-left: 0 !important;
     width: 100% !important;
   }
+  .page-break {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  /* หลีกเลี่ยงการตัดเนื้อหากลางองค์ประกอบ */
+  .avoid-break {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+    html, body {
+    margin: 0;
+    padding: 0;
+    -webkit-print-color-adjust: exact; /* ช่วย render สีให้เหมือนบนหน้าจอ */
+  }
+    @page {
+    size: A4;
+    margin: 1cm;
+  }
+  .no-print {
+    display: none !important;
+  }
+
+  /* ป้องกันไม่ให้ Grid หรือ Box ถูกตัดกลางหน้ากระดาษ */
+  .MuiGrid-item, .MuiBox-root, .MuiPaper-root {
+    page-break-inside: avoid;
+  }
+
+  /* ปรับขนาดตัวอักษรให้พอดีกับกระดาษ */
+  .MuiTypography-root {
+    font-size: 11pt;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    page-break-inside: avoid;
+  }
 }
 
 

@@ -8,8 +8,6 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { Box, Typography, CircularProgress, Button, FormControl, InputLabel, Select, MenuItem } from '@mui/material'
 import PrintIcon from '@mui/icons-material/Print'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
-import html2pdf from 'html2pdf.js'
-import dayjs from 'dayjs'
 
 import PrintableServiceReport from '@/views/report/PrintableServiceReport'
 import { getServiceReportById, getProjectById, getProjects, getUsers } from '@/libs/api/data'
@@ -110,30 +108,6 @@ export default function SelectedReportsPage() {
     fetchData()
   }, [reportIdsParam])
 
-  const handlePrintPdf = async () => {
-    const element = reportRef.current
-
-    if (!element) return
-
-    html2pdf()
-      .set({
-        margin: 0.5,
-        filename: `Service_Reports_${dayjs().format('YYYYMMDD_HHmmss')}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true
-        },
-        jsPDF: {
-          unit: 'in',
-          format: 'a4',
-          orientation: 'portrait'
-        }
-      })
-      .from(element)
-      .save()
-  }
-
   const handleBackClick = () => {
     router.back()
   }
@@ -216,8 +190,8 @@ export default function SelectedReportsPage() {
             </Select>
           </FormControl>
 
-          <Button variant='contained' color='primary' startIcon={<PrintIcon />} onClick={handlePrintPdf}>
-            พิมพ์รายงาน PDF
+          <Button variant='contained' color='primary' startIcon={<PrintIcon />} onClick={() => window.print()}>
+            พิมพ์รายงาน
           </Button>
         </Box>
       </Box>
