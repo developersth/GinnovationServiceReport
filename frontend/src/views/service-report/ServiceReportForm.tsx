@@ -80,6 +80,7 @@ export default function ServiceReportForm({ initialData, onSubmit, onCancel, pro
   const [causesOfFailure, setCausesOfFailure] = React.useState(initialData?.causesOfFailure || '')
   const [actionTaken, setActionTaken] = React.useState(initialData?.actionTaken || '')
   const [channel, setChannel] = React.useState(initialData?.channel || channels[0])
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
 
   interface ImagePreviewItem {
     id: string
@@ -107,14 +108,20 @@ export default function ServiceReportForm({ initialData, onSubmit, onCancel, pro
   const [openFullImageModal, setOpenFullImageModal] = React.useState(false)
   const [fullImageUrl, setFullImageUrl] = React.useState<string | null>(null)
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
+
+    // ป้องกันการกดซ้ำ
+    if (isSubmitting) return
+
+    setIsSubmitting(true) // ตั้งค่าเป็น true เมื่อเริ่มส่งข้อมูล
 
     const newFilesToUpload = imagePreviews.filter(item => item.isNew).map(item => item.file!)
     const existingImagePaths = imagePreviews.filter(item => !item.isNew).map(item => item.id)
     const username = getUsername() ?? ''
 
     const reportData: Omit<ServiceReport, 'id'> | ServiceReport = {
+      // ... (ข้อมูลรายงาน)
       projectId,
       reportedBy,
       complain,
@@ -124,18 +131,21 @@ export default function ServiceReportForm({ initialData, onSubmit, onCancel, pro
       imagePaths: [...existingImagePaths, ...newFilesToUpload],
       reportDate: reportDate ? reportDate.toISOString() : '',
       status,
-
-      // Assign currentUser.name to createdBy for new reports,
-      // otherwise retain existing createdBy.
       createdBy: username,
       createdAt: initialData?.createdAt || new Date().toISOString(),
-
-      // Always update updatedBy to currentUser.name
       updatedBy: username,
       updatedAt: new Date().toISOString()
     }
 
-    onSubmit(initialData ? { ...initialData, ...reportData } : reportData)
+    try {
+      await onSubmit(initialData ? { ...initialData, ...reportData } : reportData)
+    } catch (error) {
+      console.error('Submission failed', error)
+
+      // อาจจะแสดงข้อความ Error ให้ผู้ใช้เห็น
+    } finally {
+      setIsSubmitting(false) // ตั้งค่ากลับเป็น false เมื่อเสร็จสิ้น (ไม่ว่าจะสำเร็จหรือล้มเหลว)
+    }
   }
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
