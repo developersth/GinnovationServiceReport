@@ -10,21 +10,28 @@ builder.Services.AddSingleton<IServiceReportRepository, ServiceReportRepository>
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 
+// ✅ CORS Setup
+var allowedOrigins = new[]
+{
+    "https://localhost:7001",
+    "http://backend:5000",
+    "https://localhost/service-api",
+    "https://service.ginnovation.org"
+};
 
-// CORS Setup
-var MyAllowSpecificOrigins = "https://localhost:7001,http://backend:5000,http://localhost/gapi,http://codegenius.trueddns.com:16457,*";
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(name: MyAllowSpecificOrigins,
-                      builder =>
-                      {
-                          builder.AllowAnyOrigin()
-                                 .AllowAnyHeader()
-                                 .AllowAnyMethod();
-                      });
+    options.AddPolicy("AllowSpecificOrigins", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
 });
-var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]);
 
+// ✅ JWT Setup
+var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]);
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -40,14 +47,13 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(key),
-        ClockSkew = TimeSpan.Zero // ลดความคลาดเคลื่อนเวลา
+        ClockSkew = TimeSpan.Zero
     };
 });
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-// Needed for file uploads & static file serving
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
@@ -55,23 +61,23 @@ var app = builder.Build();
 // ✅ Swagger in Development
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage(); // 👈 Add this
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "GinnovationServiceReport API V1");
-        c.RoutePrefix = string.Empty; // Set Swagger at root
+        c.RoutePrefix = string.Empty;
     });
 }
 
-// ✅ Middleware Setup
-app.UseCors(MyAllowSpecificOrigins);
+// ✅ Middleware Setup (ลำดับสำคัญมาก)
 app.UseHttpsRedirection();
-app.UseStaticFiles();           // <-- Must be before MapControllers to serve wwwroot/*
+app.UseStaticFiles();
+
 app.UseRouting();
+app.UseCors("AllowSpecificOrigins");   // ✅ ชื่อ policy ต้องตรงกัน!
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
 app.Run();
