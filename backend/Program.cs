@@ -2,6 +2,7 @@ using System.Text;
 using backend.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +10,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<IServiceReportRepository, ServiceReportRepository>();
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
+builder.Services.AddScoped<ReportService>();
 
+QuestPDF.Settings.License = LicenseType.Community;
 // ✅ CORS Setup
 var allowedOrigins = new[]
 {
