@@ -53,4 +53,38 @@ public class ReportController : ControllerBase
 
         return File(pdfBytes, "application/pdf", fileName);
     }
+    [HttpPost("GenerateServiceReportJobDetails/pdf")]
+    public async Task<IActionResult> GenerateServiceReportJobDetails([FromBody] GenerateReportRequest request)
+    {
+        // 1. ดึงข้อมูล Project
+        var project = await _projectRepo.GetByIdAsync(request.ProjectId);
+        if (project == null) return NotFound("Project not found");
+
+        // 2. ดึงเฉพาะ ServiceReports ที่มี ID อยู่ใน list ที่ส่งมา
+        // วิธีที่มีประสิทธิภาพที่สุดคือใช้ Filter Definition ของ MongoDB
+        var allReports = await _serviceRepo.GetAllAsync(); // หรือใช้ Repo เฉพาะทางจะดีกว่า
+        var selectedReports = allReports
+            .Where(r => request.ServiceReportIds.Contains(r.Id!) && r.ProjectId == request.ProjectId)
+            .OrderByDescending(r => r.ReportDate)
+            .ToList();
+
+        if (!selectedReports.Any()) return NotFound("No service reports found for the provided IDs");
+
+        // 3. เตรียม ViewModel
+        var viewModel = new ServiceReportViewModel
+        {
+            Project = project,
+            Reports = selectedReports
+        };
+
+        // 4. สร้าง PDF
+        var document = new ServiceReportOneDocument(viewModel, _env);
+        byte[] pdfBytes = document.GeneratePdf();
+
+        // 5. ตั้งชื่อไฟล์พร้อม Timestamp
+        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        string fileName = $"ServiceReportDetails_{project.Name.Replace(" ", "_")}_{timestamp}.pdf";
+
+        return File(pdfBytes, "application/pdf", fileName);
+    }
 }

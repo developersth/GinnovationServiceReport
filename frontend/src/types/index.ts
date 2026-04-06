@@ -37,4 +37,17 @@ export interface ServiceReport {
   updatedBy: string; 
   updatedAt: string; 
   status: 'Open' | 'In Progress' | 'Resolved'| 'Complete' | 'Closed'; // สถานะ
+  staffWorkingTime?: StaffWorkingTime[] | null; // ข้อมูลเวลาทำงานของช่าง (optional)
+}
+
+export interface StaffWorkingTime {
+  id: string;
+  engineerName: string;
+  workingDate: string ; // แนะนำ string (ISO 8601) เมื่อรับมาจาก JSON
+  startTime: string ;   // หรือใช้ string ในรูปแบบ "HH:mm" ตามที่ใช้ใน Form
+  endTime: string ;
+  workingHours: number;
+  travellingHours: number;
+  description: string;
+  isCharging: boolean;
 }

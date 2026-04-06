@@ -1,17 +1,19 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+
 import { useSearchParams, useRouter } from 'next/navigation'
+
 import { Box, Typography, CircularProgress, Button } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import DownloadIcon from '@mui/icons-material/Download'
+
 import { generatePdfReport } from '@/libs/api/data'
 
 export default function SelectedReportsPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   
-  // รับค่าจาก URL Query String
   const reportIdsParam = searchParams.get('ids')
   const projectId = searchParams.get('projectId')
 
@@ -20,14 +22,14 @@ export default function SelectedReportsPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // กำหนดตัวแปรไว้สำหรับทำ cleanup ภายใน scope นี้
-    let currentUrl: string | null = null;
+    let currentUrl: string | null = null
 
     const fetchPdfReport = async () => {
       if (!reportIdsParam || !projectId) {
         setError('ข้อมูลไม่ครบถ้วน (Missing Project ID or Report IDs)')
         setLoading(false)
-        return
+
+        return // แก้ไข: เพิ่ม Newline ก่อน return
       }
 
       const ids = reportIdsParam.split(',')
@@ -36,10 +38,8 @@ export default function SelectedReportsPage() {
         setLoading(true)
         setError(null)
 
-        // เรียก API ที่ส่งกลับมาเป็น Blob
         const blob = await generatePdfReport(projectId, ids)
         
-        // สร้าง Local URL
         currentUrl = window.URL.createObjectURL(blob)
         setPdfUrl(currentUrl)
       } catch (err: any) {
@@ -52,7 +52,6 @@ export default function SelectedReportsPage() {
 
     fetchPdfReport()
 
-    // Cleanup Function: สำคัญมากสำหรับ Safari/Chrome บน Mac
     return () => {
       if (currentUrl) {
         window.URL.revokeObjectURL(currentUrl)
@@ -62,11 +61,11 @@ export default function SelectedReportsPage() {
 
   const handleDownload = () => {
     if (!pdfUrl) return
+
     const link = document.createElement('a')
+
     link.href = pdfUrl
-    // ตั้งชื่อไฟล์ให้สื่อความหมาย
-    const fileName = `ServiceReport_${projectId}_${new Date().toISOString().split('T')[0]}.pdf`
-    link.download = fileName
+    link.download = `ServiceReport_${projectId}_${new Date().toISOString().split('T')[0]}.pdf`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -94,7 +93,6 @@ export default function SelectedReportsPage() {
 
   return (
     <Box sx={{ p: 3, height: 'calc(100vh - 20px)', display: 'flex', flexDirection: 'column' }}>
-      {/* Header ส่วนควบคุม */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant='h5' sx={{ fontWeight: 'bold' }}>
           พรีวิวรายงาน Service Report
@@ -122,10 +120,9 @@ export default function SelectedReportsPage() {
         </Box>
       </Box>
 
-      {/* พื้นที่แสดง PDF */}
       <Box sx={{ 
         flexGrow: 1, 
-        backgroundColor: '#525659', // สีพื้นหลังเข้มเหมือนตัวอ่าน PDF มาตรฐาน
+        backgroundColor: '#525659', 
         borderRadius: 1, 
         overflow: 'hidden', 
         border: '1px solid #ddd',

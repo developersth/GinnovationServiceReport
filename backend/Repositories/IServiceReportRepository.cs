@@ -10,6 +10,7 @@ public interface IServiceReportRepository
     Task CreateAsync(ServiceReport report);
     Task UpdateAsync(string id, ServiceReport report);
     Task DeleteAsync(string id);
+
 }
 
 public class ServiceReportRepository : IServiceReportRepository
@@ -38,3 +39,4 @@ public class ServiceReportRepository : IServiceReportRepository
     public async Task DeleteAsync(string id) =>
         await _collection.DeleteOneAsync(r => r.Id == id);
 }
+    

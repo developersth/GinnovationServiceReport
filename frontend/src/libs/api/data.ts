@@ -204,7 +204,8 @@ export async function addServiceReport(report: Omit<ServiceReport, 'id'>): Promi
   formData.append('reportDto.createdBy', report.createdBy)
   formData.append('reportDto.updatedAt', report.updatedAt)
   formData.append('reportDto.updatedBy', report.updatedBy)
-
+  formData.append('reportDto.staffWorkingTime', JSON.stringify(report.staffWorkingTime || [])) // Convert staffWorkingTime array to JSON string
+   
   // Append image files
   report.imagePaths.forEach(item => {
     if (item instanceof File) {
@@ -253,6 +254,7 @@ export async function updateServiceReport(updatedReport: ServiceReport): Promise
   formData.append('reportDto.status', updatedReport.status)
   formData.append('reportDto.updatedBy', updatedReport.updatedBy)
   formData.append('reportDto.updatedAt', updatedReport.updatedAt)
+  formData.append('reportDto.staffWorkingTime', JSON.stringify(updatedReport.staffWorkingTime || [])) // Convert staffWorkingTime array to JSON string
 
   // Append new image files to the 'images' parameter
   newFilesToUpload.forEach(file => {
@@ -318,20 +320,32 @@ export async function deleteServiceReport(id: string): Promise<void> {
 }
 
 export async function generatePdfReport(projectId: string, serviceReportIds: string[]): Promise<Blob> {
-  const response = await fetch(`${API_BASE_URL}/api/Report/GenerateServiceReport/pdf`, {
+  // ตรวจสอบว่ามีข้อมูลส่งมาครบถ้วนก่อนยิง API
+  if (!projectId || serviceReportIds.length === 0) {
+    throw new Error('Project ID and Service Report IDs are required.');
+  }
+
+  // ปรับ Path ให้ตรงกับที่ตั้งไว้ใน Backend (เช่น /api/Reports/...)
+  const response = await fetch(`${API_BASE_URL}/api/Reports/GenerateServiceReport/pdf`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+
+      // ถ้ามีการใช้ Auth อย่าลืมใส่ Token ตรงนี้ครับ
+      // 'Authorization': `Bearer ${token}`
     },
     body: JSON.stringify({
       projectId: projectId,
       serviceReportIds: serviceReportIds,
     }),
-  })
+  });
 
   if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`)
+    // ถ้าเจอ 404 หรือ 500 ให้โยน Error พร้อมสถานะเพื่อให้หาจุดบกพร่องง่ายขึ้น
+    const errorMsg = await response.text();
+
+    throw new Error(`PDF Generation Failed (${response.status}): ${errorMsg || response.statusText}`);
   }
 
-  return await response.blob()
+  return await response.blob();
 }

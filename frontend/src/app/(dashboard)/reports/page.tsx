@@ -55,6 +55,7 @@ import ServiceReportForm from '@views/service-report/ServiceReportForm'
 
 // CORRECTED PATH: Make sure this path is accurate for your project structure
 import { CustomSnackbarAlert } from '@/views/common/CustomAlert'
+import { constrainedMemory } from 'process'
 
 // REMOVED: This Alert helper function is now part of CustomAlert.tsx
 // function Alert(props: AlertProps) {
@@ -146,7 +147,6 @@ export default function ServiceReportsPage() {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         }
-
         await addServiceReport(newReport)
         setSnackbarMessage('เพิ่มรายงานบริการเรียบร้อยแล้ว!')
       }
@@ -233,29 +233,35 @@ export default function ServiceReportsPage() {
   }
 
 const handleGenerateReport = () => {
-    if (selectedReportIds.length > 0) {
-      const idsParam = selectedReportIds.join(',')
-      
-      // ดึง projectId จากใบงานแรกที่เลือก (กรณีไม่ได้เลือกฟิลเตอร์โครงการไว้)
-      const firstSelectedReport = reports.find(r => r.id === selectedReportIds[0])
-      const projectId = activeFilterProject || firstSelectedReport?.projectId
+  // 1. ตรวจสอบว่ามีการเลือกรายการหรือไม่
+  if (selectedReportIds.length === 0) {
+    setSnackbarMessage('กรุณาเลือกร่างรายงานอย่างน้อยหนึ่งรายการเพื่อสร้างรายงาน')
+    setSnackbarSeverity('info')
+    setSnackbarOpen(true)
 
-      if (!projectId) {
-        setSnackbarMessage('ไม่พบข้อมูลโครงการในรายการที่เลือก')
-        setSnackbarSeverity('warning')
-        setSnackbarOpen(true)
-        return
-      }
-
-      // ส่งทั้ง ids และ projectId ไปยังหน้า Preview
-      // หมายเหตุ: ปรับ Path ให้ตรงกับโครงสร้างจริงของคุณ (เช่น /admin/reports/selected-reports)
-      router.push(`/reports/selected-reports?ids=${idsParam}&projectId=${projectId}`)
-    } else {
-      setSnackbarMessage('กรุณาเลือกร่างรายงานอย่างน้อยหนึ่งรายการเพื่อสร้างรายงาน')
-      setSnackbarSeverity('info')
-      setSnackbarOpen(true)
-    }
+    return
   }
+
+  const idsParam = selectedReportIds.join(',')
+  
+  // 2. ค้นหาใบงานแรกที่เลือก
+  const firstSelectedReport = reports.find(r => r.id === selectedReportIds[0])
+  
+  // 3. กำหนดค่า Project ID และจัดการเรื่อง Type
+  // ใช้ toString() เพื่อป้องกันกรณี id เป็น number
+  const projectId = activeFilterProject?.toString() || firstSelectedReport?.projectId?.toString()
+
+  if (!projectId) {
+    setSnackbarMessage('ไม่พบข้อมูลโครงการในรายการที่เลือก')
+    setSnackbarSeverity('warning')
+    setSnackbarOpen(true)
+
+    return
+  }
+
+  // 4. Navigate ไปยังหน้า Report
+  router.push(`/reports/selected-reports?ids=${idsParam}&projectId=${projectId}`)
+}
 
   if (loading) {
     return (

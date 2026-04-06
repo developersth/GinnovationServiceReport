@@ -34,6 +34,8 @@ namespace backend.Models
 
         public List<string>? ImagePaths { get; set; }
 
+
+
         [Required]
         public DateTime ReportDate { get; set; } = DateTime.UtcNow;
 
@@ -47,5 +49,6 @@ namespace backend.Models
         public string UpdatedBy { get; set; } = string.Empty;
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        public List<StaffWorkingTime> StaffWorkingTime { get; set; } = new List<StaffWorkingTime>();
     }
 }

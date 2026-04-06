@@ -47,6 +47,7 @@ public class ServiceReportController : ControllerBase
                 CreatedAt = TimeZoneInfo.ConvertTimeFromUtc(r.CreatedAt, timeZone),
                 UpdatedBy = r.UpdatedBy,
                 UpdatedAt = TimeZoneInfo.ConvertTimeFromUtc(r.UpdatedAt, timeZone),
+                StaffWorkingTime = r.StaffWorkingTime
             });
 
         return Ok(result);
@@ -110,7 +111,8 @@ public class ServiceReportController : ControllerBase
             ReportDate = reportDto.ReportDate,
             CreatedBy = reportDto.CreatedBy,
             UpdatedBy = reportDto.UpdatedBy,
-            ImagePaths = imageUrls
+            ImagePaths = imageUrls,
+            StaffWorkingTime = reportDto.StaffWorkingTime
         };
 
         await _repository.CreateAsync(serviceReport);
@@ -210,6 +212,7 @@ public class ServiceReportController : ControllerBase
         existing.UpdatedBy = reportDto.UpdatedBy;
         existing.ImagePaths = finalImagePaths; // Assign the consolidated list of paths
         existing.UpdatedAt = DateTime.UtcNow;
+        existing.StaffWorkingTime = reportDto.StaffWorkingTime;
 
         await _repository.UpdateAsync(id, existing);
 

@@ -24,6 +24,14 @@ import Input from '@mui/material/Input'
 import AttachFileIcon from '@mui/icons-material/AttachFile'
 import IconButton from '@mui/material/IconButton'
 import DeleteIcon from '@mui/icons-material/Delete'
+import AddIcon from '@mui/icons-material/Add'
+import Table from '@mui/material/Table'
+import TableBody from '@mui/material/TableBody'
+import TableCell from '@mui/material/TableCell'
+import TableContainer from '@mui/material/TableContainer'
+import TableHead from '@mui/material/TableHead'
+import TableRow from '@mui/material/TableRow'
+import Paper from '@mui/material/Paper'
 
 import InputAdornment from '@mui/material/InputAdornment'
 import Dialog from '@mui/material/Dialog'
@@ -32,7 +40,7 @@ import DialogActions from '@mui/material/DialogActions'
 import Chip from '@mui/material/Chip'
 
 import { combineImageUrl } from '../../utils'
-import type { ServiceReport, Project } from '../../types'
+import type { ServiceReport, Project, StaffWorkingTime } from '../../types'
 import { getUsername } from '@/libs/api/auth'
 
 // Assuming you have a User type or interface in your project, e.g., in types.ts
@@ -82,6 +90,10 @@ export default function ServiceReportForm({ initialData, onSubmit, onCancel, pro
   const [channel, setChannel] = React.useState(initialData?.channel || channels[0])
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
+  const [staffTimes, setStaffTimes] = React.useState<StaffWorkingTime[]>(
+    (initialData?.staffWorkingTime && initialData.staffWorkingTime.length > 0) ? initialData.staffWorkingTime : []
+  )
+
   interface ImagePreviewItem {
     id: string
     url: string
@@ -107,6 +119,13 @@ export default function ServiceReportForm({ initialData, onSubmit, onCancel, pro
 
   const [openFullImageModal, setOpenFullImageModal] = React.useState(false)
   const [fullImageUrl, setFullImageUrl] = React.useState<string | null>(null)
+
+  const handleUpdateStaff = (index: number, field: keyof StaffWorkingTime, value: any) => {
+    const updatedStaff = [...staffTimes]
+
+    updatedStaff[index] = { ...updatedStaff[index], [field]: value }
+    setStaffTimes(updatedStaff)
+  }
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -134,7 +153,8 @@ export default function ServiceReportForm({ initialData, onSubmit, onCancel, pro
       createdBy: username,
       createdAt: initialData?.createdAt || new Date().toISOString(),
       updatedBy: username,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      staffWorkingTime: staffTimes && staffTimes.length > 0 ? staffTimes : null,
     }
 
     try {
@@ -146,6 +166,26 @@ export default function ServiceReportForm({ initialData, onSubmit, onCancel, pro
     } finally {
       setIsSubmitting(false) // ตั้งค่ากลับเป็น false เมื่อเสร็จสิ้น (ไม่ว่าจะสำเร็จหรือล้มเหลว)
     }
+  }
+
+const handleAddStaff = () => {
+    const newStaff: StaffWorkingTime = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      engineerName: '',
+      description: '',
+      workingDate: dayjs().toISOString(),
+      startTime: '08:30',
+      endTime: '17:30',
+      workingHours: 8,
+      travellingHours: 0,
+      isCharging: false
+    }
+
+    setStaffTimes(prev => [...prev, newStaff])
+  }
+
+  const handleDeleteStaff = (index: number) => {
+    setStaffTimes(prev => prev.filter((_, i) => i !== index))
   }
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -374,6 +414,57 @@ export default function ServiceReportForm({ initialData, onSubmit, onCancel, pro
             }}
           />
         </FormControl>
+        {/* --- Section: Service Staff Working Time --- */}
+        <Box sx={{ m: 1, mt: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Typography variant="h6">Service staff and working time</Typography>
+            <Button startIcon={<AddIcon />} variant="outlined" size="small" onClick={handleAddStaff}>
+              เพิ่มวิศวกร
+            </Button>
+          </Box>
+          <TableContainer component={Paper} variant="outlined">
+            <Table size="small">
+              <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+                <TableRow>
+                  <TableCell>Engineer Name</TableCell>
+                  <TableCell width={150}>Date</TableCell>
+                  <TableCell width={100}>Start</TableCell>
+                  <TableCell width={100}>End</TableCell>
+                  <TableCell width={80}></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {staffTimes.map((staff, index) => (
+                  <TableRow key={index}>
+                    <TableCell>
+                      <TextField size="small" fullWidth value={staff.engineerName} onChange={e => handleUpdateStaff(index, 'engineerName', e.target.value)} />
+                    </TableCell>
+                    <TableCell>
+                      <DatePicker
+                        format="DD/MM/YYYY"
+                        value={dayjs(staff.workingDate)}
+                        onChange={(val) => handleUpdateStaff(index, 'workingDate', val?.toDate())}
+                        slotProps={{ textField: { size: 'small' } }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <TextField size="small" type="time" value={staff.startTime} onChange={e => handleUpdateStaff(index, 'startTime', e.target.value)} />
+                    </TableCell>
+                    <TableCell>
+                      <TextField size="small" type="time" value={staff.endTime} onChange={e => handleUpdateStaff(index, 'endTime', e.target.value)} />
+                    </TableCell>
+                    <TableCell>
+                      <IconButton color="error" onClick={() => handleDeleteStaff(index)}><DeleteIcon /></IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {staffTimes.length === 0 && (
+                  <TableRow><TableCell colSpan={5} align="center">ยังไม่มีข้อมูลเวลาทำงาน</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
         <FormControl fullWidth sx={{ m: 1 }}>
           <InputLabel id='status-label'>สถานะ</InputLabel>
           <Select

@@ -95,3 +95,5 @@ pm2 flush
 pm2 start ecosystem.config.js --log-date-format "YYYY-MM-DD HH:mm:ss" --time
 
 pm2 start ecosystem.config.js --env production
+
+dotnet build -c Release

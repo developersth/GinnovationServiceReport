@@ -1,4 +1,5 @@
-using System.Collections.Generic; // Required for List<string>
+using System.Collections.Generic;
+using System.Text.Json.Serialization; // Required for List<string>
 
 namespace backend.Models
 {
@@ -19,6 +20,8 @@ namespace backend.Models
 
         // สำหรับเก็บชื่อไฟล์ / path รูปภาพหลายภาพ
         public List<string>? ImagePaths { get; set; }
-         public List<string>? ExistingImagePathsToKeep { get; set; }
+        public List<string>? ExistingImagePathsToKeep { get; set; }
+
+        public List<StaffWorkingTime>? StaffWorkingTime { get; set; }
     }
 }

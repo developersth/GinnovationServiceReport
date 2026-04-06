@@ -4,13 +4,13 @@ using QuestPDF.Helpers;
 using backend.Models;
 using System.IO;
 
-public class ServiceReportDocument : IDocument
+public class ServiceReportOneDocument : IDocument
 {
     private readonly ServiceReportViewModel _model;
 
     private readonly IWebHostEnvironment _env;
     // รับ webRootPath เข้ามาเพื่อให้เข้าถึงไฟล์ images ได้แม่นยำ
-    public ServiceReportDocument(ServiceReportViewModel model, IWebHostEnvironment env = null)
+    public ServiceReportOneDocument(ServiceReportViewModel model, IWebHostEnvironment env = null)
     {
         _model = model;
         _env = env;
@@ -39,20 +39,119 @@ public class ServiceReportDocument : IDocument
             page.DefaultTextStyle(x => x.FontFamily("TH Sarabun New").FontSize(14));
             page.Margin(1, Unit.Centimetre);
 
-            // --- Header: แสดงเฉพาะหน้าแรก ---
+            // หน้าแรก: Header (โชว์ครั้งเดียว) + ตารางสรุป
             page.Header().ShowOnce().Element(ComposeHeader);
 
-            page.Content().Element(ComposeContent);
-
-            // --- Footer: แบ่งเป็น 2 ส่วน ---
-            page.Footer().Column(column =>
+            page.Content().Column(column =>
             {
-      
-                column.Item().ShowEntire().Element(ComposeSignatures);
+                column.Item().Element(ComposeContent); // ตารางสรุปเดิม
 
-                // 2. ส่วนเลขหน้าและที่อยู่: แสดงทุกหน้า
-                column.Item().Element(ComposePageNumberAndAddress);
+                // แสดงรูปภาพทั้งหมดจากทุกงาน
+                column.Item().Element(ComposeAllImages);
+
+                // วนลูปสร้างหน้ารายละเอียดใบงาน (แสดงต่อเนื่องในหน้าเดียว)
+                foreach (var report in _model.Reports)
+                {
+                    column.Item().Element(c => ComposeJobDetails(c, report));
+                }
+
+                // ลายเซ็นจะปรากฏต่อท้ายหน้ารายละเอียดสุดท้าย
+                column.Item().Element(ComposeSignatures);
             });
+
+            page.Footer().Element(ComposePageNumberAndAddress);
+        });
+    }
+
+    void ComposeJobDetails(IContainer container, ServiceReport report)
+    {
+        container.Column(column =>
+        {
+            column.Spacing(10);
+            column.Item().Text($"รายละเอียดการปฏิบัติงาน: {report.Id}").FontSize(16).SemiBold().Underline();
+
+            // --- ส่วนที่ 1: Status & Info ---
+            column.Item().Row(row =>
+            {
+                // Status of work (จำลอง Checkbox)
+                row.RelativeItem().Column(c =>
+                {
+                    c.Item().Text("Status of work").SemiBold();
+                    // c.Item().Text(report.IsCompleted ? "[✓] Completed" : "[ ] Completed");
+                    // c.Item().Text(!report.IsCompleted ? "[✓] Follow-up" : "[ ] Follow-up");
+                    c.Item().Text("[ ] Completed");
+                    c.Item().Text("[ ] Follow-up");
+                });
+
+                // Reporter Info
+                row.RelativeItem().Table(table =>
+                {
+                    table.ColumnsDefinition(cols => { cols.ConstantColumn(60); cols.RelativeColumn(); });
+                    table.Cell().Text("Report by:"); table.Cell().Text(report.ReportedBy);
+                    table.Cell().Text("Date:"); table.Cell().Text(GetThaiTime(report.ReportDate).ToString("dd/MM/yyyy"));
+                });
+            });
+
+            // --- ส่วนที่ 2: Service Staff Working Time ---
+            // Comment out for now - requires StaffTimes property in ServiceReport
+            /*
+            column.Item().Text("Service staff and working time").SemiBold();
+            column.Item().Table(table =>
+            {
+                table.ColumnsDefinition(cols =>
+                {
+                    cols.RelativeColumn(); // Name
+                    cols.ConstantColumn(70); // Date
+                    cols.ConstantColumn(50); // Start/End
+                    cols.ConstantColumn(50);
+                    cols.ConstantColumn(60); // Working Hrs
+                });
+
+                table.Header(h =>
+                {
+                    h.Cell().Element(HeaderStyle).Text("Engineer name");
+                    h.Cell().Element(HeaderStyle).Text("Date");
+                    h.Cell().Element(HeaderStyle).Text("Start");
+                    h.Cell().Element(HeaderStyle).Text("End");
+                    h.Cell().Element(HeaderStyle).Text("Hours");
+                    static IContainer HeaderStyle(IContainer c) => c.Border(0.5f).AlignCenter().Background(Colors.Grey.Lighten4);
+                });
+
+                // ดึงข้อมูล Staff จาก Model (ถ้ามี)
+                if (report.StaffTimes != null)
+                {
+                    foreach (var staff in report.StaffTimes)
+                    {
+                        table.Cell().Element(BodyStyle).Text(staff.EngineerName.ToString()); 
+                        table.Cell().Element(BodyStyle).Text(staff.Date.ToString("dd/MM/yyyy")); 
+                        table.Cell().Element(BodyStyle).AlignCenter().Text(staff.StartTime.ToString("HH:mm"));
+                        table.Cell().Element(BodyStyle).AlignCenter().Text(staff.EndTime.ToString("HH:mm"));
+                        table.Cell().Element(BodyStyle).AlignCenter().Text(staff.TravellingHours.ToString("N0"));
+                    }
+                }
+                static IContainer BodyStyle(IContainer c) => c.Border(0.5f).PaddingHorizontal(5);
+            });
+            */
+
+            // --- ส่วนที่ 3: ภาพถ่ายการปฏิบัติงาน ---
+            // ย้ายไปแสดงรวมทั้งหมดก่อนรายละเอียดงาน
+            /*
+            if (report.ImagePaths != null && report.ImagePaths.Any())
+            {
+                column.Item().PaddingTop(10).Text("รูปภาพประกอบการปฏิบัติงาน").SemiBold();
+                column.Item().Grid(grid =>
+                {
+                    grid.Columns(2); // แสดง 2 รูปต่อแถว
+                    grid.Spacing(5);
+                    foreach (var imgPath in report.ImagePaths)
+                    {
+                        var fullPath = Path.Combine(_env.WebRootPath, imgPath);
+                        if (File.Exists(fullPath))
+                            grid.Item().Image(fullPath).FitArea();
+                    }
+                });
+            }
+            */
         });
     }
     void ComposeSignatures(IContainer container)
@@ -136,7 +235,7 @@ public class ServiceReportDocument : IDocument
             });
 
         });
-        
+
     }
     void ComposePageNumberAndAddress(IContainer container)
     {
@@ -201,52 +300,35 @@ public class ServiceReportDocument : IDocument
         });
     }
 
-    void ComposeFooter(IContainer container)
+    void ComposeAllImages(IContainer container)
     {
-        container.Column(column =>
+        if (_env?.WebRootPath == null)
+            return;
+
+        var allImages = _model.Reports
+            .Where(r => r.ImagePaths != null)
+            .SelectMany(r => r.ImagePaths)
+            .Distinct()
+            .ToList();
+
+        if (allImages.Any())
         {
-            column.Item().PaddingTop(30).Row(row =>
+            container.PaddingTop(10).Column(col =>
             {
-                // --- ฝั่งลูกค้า (ชิดซ้ายของหน้ากระดาษ) ---
-                row.RelativeItem().Column(c =>
+                col.Item().Text("รูปภาพประกอบการปฏิบัติงานทั้งหมด").FontSize(14).SemiBold();
+                col.Item().PaddingTop(6).Grid(grid =>
                 {
-                    c.Item().Width(170).Column(innerCol =>
+                    grid.Columns(4);
+                    grid.Spacing(4);
+                    foreach (var imgPath in allImages.Take(4)) // แสดงสูงสุด 4 ภาพ
                     {
-                        innerCol.Item().PaddingTop(40).LineHorizontal(0.5f);
-                        innerCol.Item().AlignCenter().PaddingTop(2).Text("Date:      /      /      ").FontSize(10);
-                        innerCol.Item().AlignCenter().Text("Customer Sign").SemiBold();
-                        innerCol.Item().AlignCenter().Text("(ผู้รับทราบผลการปฏิบัติงาน)").FontSize(10);
-                    });
-                });
-
-                // --- ฝั่งเจ้าหน้าที่ (ชิดขวาของหน้ากระดาษ) ---
-                row.RelativeItem().AlignRight().Column(c =>
-                {
-                    c.Item().Width(170).Column(innerCol =>
-                    {
-                        // ถ้าต้องการโชว์ชื่อคนทำ Report เหนือเส้น (เหมือนต้นฉบับ)
-                        //innerCol.Item().Height(40).AlignCenter().AlignBottom().Text(_model.Reports?.FirstOrDefault()?.ReportedBy ?? "Kritsadee Satewin");
-                        innerCol.Item().Height(40).AlignCenter().AlignBottom().Text("");
-                        innerCol.Item().LineHorizontal(0.5f);
-                        innerCol.Item().AlignCenter().PaddingTop(2).Text($"Date: {DateTime.Now:dd/MM/yyyy}").FontSize(10);
-                        innerCol.Item().AlignCenter().Text("Report by").SemiBold();
-                        innerCol.Item().AlignCenter().Text("(เจ้าหน้าที่บริการ)").FontSize(10);
-                    });
+                        var fullPath = Path.Combine(_env.WebRootPath, imgPath.TrimStart('/'));
+                        if (File.Exists(fullPath))
+                            grid.Item().Width(100).Height(100).AlignCenter().Image(fullPath).FitArea();
+                    }
                 });
             });
-
-            // เลขหน้า
-            column.Item().PaddingTop(10).AlignCenter().Text(x =>
-            {
-                x.Span("Page ");
-                x.CurrentPageNumber();
-                x.Span(" / ");
-                x.TotalPages();
-            });
-
-            // ส่วนท้ายสุด (ที่อยู่บริษัท)
-            column.Item().PaddingTop(5).AlignCenter().Text("G INNOVATION CO., LTD. 238/5 Ratchadapisek Rd., Huai Khwang, Bangkok 10320").FontSize(9).FontColor(Colors.Grey.Medium);
-        });
+        }
     }
 
     void AddInfoRow(TableDescriptor table, string label, string value)
