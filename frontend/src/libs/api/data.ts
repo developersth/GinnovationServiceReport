@@ -316,3 +316,22 @@ export async function deleteServiceReport(id: string): Promise<void> {
     throw new Error(`HTTP error! status: ${response.status}`)
   }
 }
+
+export async function generatePdfReport(projectId: string, serviceReportIds: string[]): Promise<Blob> {
+  const response = await fetch(`${API_BASE_URL}/api/Report/GenerateServiceReport/pdf`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      projectId: projectId,
+      serviceReportIds: serviceReportIds,
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+
+  return await response.blob()
+}

@@ -1,219 +1,149 @@
-// src/app/admin/reports/selected-reports/page.tsx
 'use client'
 
-import React, { useEffect, useState, useRef } from 'react'
-
+import React, { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-
-import { Box, Typography, CircularProgress, Button, FormControl, InputLabel, Select, MenuItem } from '@mui/material'
-import PrintIcon from '@mui/icons-material/Print'
+import { Box, Typography, CircularProgress, Button } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
-
-import PrintableServiceReport from '@/views/report/PrintableServiceReport'
-import { getServiceReportById, getProjectById, getProjects, getUsers } from '@/libs/api/data'
-import type { ServiceReport, Project, User } from '@/types'
-import { formatDate } from '@/utils'
-
-// สร้าง type สำหรับ StaffRow ที่จะใช้งาน
-interface ServiceStaffRow extends User {
-  date?: string
-  start?: string
-  end?: string
-  workingHours?: string
-  travellingHours?: string
-  charging?: string
-}
+import DownloadIcon from '@mui/icons-material/Download'
+import { generatePdfReport } from '@/libs/api/data'
 
 export default function SelectedReportsPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  
+  // รับค่าจาก URL Query String
   const reportIdsParam = searchParams.get('ids')
+  const projectId = searchParams.get('projectId')
 
-  const [allReports, setAllReports] = useState<ServiceReport[]>([])
-  const [allProjects, setAllProjects] = useState<Project[]>([])
-  const [allUsers, setAllUsers] = useState<User[]>([])
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('')
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const reportRef = useRef<HTMLDivElement>(null)
-
   useEffect(() => {
-    const fetchData = async () => {
-      if (!reportIdsParam) {
-        setError('No report IDs provided.')
-        setLoading(false)
+    // กำหนดตัวแปรไว้สำหรับทำ cleanup ภายใน scope นี้
+    let currentUrl: string | null = null;
 
+    const fetchPdfReport = async () => {
+      if (!reportIdsParam || !projectId) {
+        setError('ข้อมูลไม่ครบถ้วน (Missing Project ID or Report IDs)')
+        setLoading(false)
         return
       }
 
       const ids = reportIdsParam.split(',')
 
-      if (ids.length === 0) {
-        setError('No report IDs provided.')
-        setLoading(false)
-
-        return
-      }
-
-      setLoading(true)
-      setError(null)
-
       try {
-        const fetchedReports: ServiceReport[] = []
-        const fetchedProjectsMap = new Map<string, Project>()
-        const projectsData = await getProjects()
-        const usersData = await getUsers()
+        setLoading(true)
+        setError(null)
 
-        if (projectsData) {
-          setAllProjects(projectsData)
-          projectsData.forEach(p => fetchedProjectsMap.set(p.id, p))
-        }
-
-        if (usersData) {
-          setAllUsers(usersData)
-        }
-
-        for (const id of ids) {
-          const reportData = await getServiceReportById(id)
-
-          if (reportData) {
-            fetchedReports.push(reportData)
-
-            if (reportData.projectId && !fetchedProjectsMap.has(reportData.projectId)) {
-              const projectData = await getProjectById(reportData.projectId)
-
-              if (projectData) {
-                fetchedProjectsMap.set(reportData.projectId, projectData)
-              }
-            }
-          }
-        }
-
-        setAllReports(fetchedReports)
-
-        if (fetchedReports.length > 0 && fetchedReports[0].projectId) {
-          setSelectedProjectId(fetchedReports[0].projectId)
-        } else if (projectsData.length > 0) {
-          setSelectedProjectId(projectsData[0].id)
-        }
-      } catch (err) {
-        console.error('[SelectedReportsPage] Failed to fetch reports or projects:', err)
-        setError('Failed to load selected service reports.')
+        // เรียก API ที่ส่งกลับมาเป็น Blob
+        const blob = await generatePdfReport(projectId, ids)
+        
+        // สร้าง Local URL
+        currentUrl = window.URL.createObjectURL(blob)
+        setPdfUrl(currentUrl)
+      } catch (err: any) {
+        console.error('[SelectedReportsPage] Error:', err)
+        setError(err.message || 'เกิดข้อผิดพลาดในการดึงข้อมูลรายงาน PDF')
       } finally {
         setLoading(false)
       }
     }
 
-    fetchData()
-  }, [reportIdsParam])
+    fetchPdfReport()
 
-  const handleBackClick = () => {
-    router.back()
+    // Cleanup Function: สำคัญมากสำหรับ Safari/Chrome บน Mac
+    return () => {
+      if (currentUrl) {
+        window.URL.revokeObjectURL(currentUrl)
+      }
+    }
+  }, [reportIdsParam, projectId])
+
+  const handleDownload = () => {
+    if (!pdfUrl) return
+    const link = document.createElement('a')
+    link.href = pdfUrl
+    // ตั้งชื่อไฟล์ให้สื่อความหมาย
+    const fileName = `ServiceReport_${projectId}_${new Date().toISOString().split('T')[0]}.pdf`
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '80vh', gap: 2 }}>
         <CircularProgress />
-        <Typography variant='h6' sx={{ ml: 2 }}>
-          Loading Reports...
-        </Typography>
+        <Typography variant='h6' sx={{ color: 'text.secondary' }}>กำลังจัดเตรียมไฟล์ PDF...</Typography>
       </Box>
     )
   }
 
   if (error) {
     return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
-        <Typography color='error' variant='h6'>
-          {error}
-        </Typography>
+      <Box sx={{ p: 4, textAlign: 'center', mt: 5 }}>
+        <Typography color='error' variant='h6' sx={{ mb: 2 }}>{error}</Typography>
+        <Button variant='contained' startIcon={<ArrowBackIcon />} onClick={() => router.back()}>
+          กลับไปหน้าก่อนหน้า
+        </Button>
       </Box>
     )
   }
-
-  if (allReports.length === 0) {
-    return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
-        <Typography variant='h6'>No service reports found for the selected IDs.</Typography>
-      </Box>
-    )
-  }
-
-  const projectForPrintableReport = allProjects.find(p => p.id === selectedProjectId)
-
-  // เตรียมข้อมูล Staff สำหรับส่งไปที่ PrintableServiceReport
-  const staffForPrintableReport: ServiceStaffRow[] = allReports.reduce<ServiceStaffRow[]>((acc, report) => {
-    if (report.reportedBy && allUsers.length > 0) {
-      const staffUser = allUsers.find(user => user.id === report.reportedBy)
-
-      if (staffUser) {
-        // หากต้องการข้อมูลอื่นๆ ของ staff เช่น วันที่, เวลาเข้า-ออก ก็สามารถเพิ่มได้ในส่วนนี้
-        acc.push({
-          ...staffUser,
-          date: formatDate(report.reportDate)
-        })
-      }
-    }
-
-    return acc
-  }, [])
-
-  // Filter ให้เหลือเฉพาะข้อมูลที่ไม่ซ้ำกัน
-  const uniqueStaff = staffForPrintableReport.filter(
-    (staff, index, self) => index === self.findIndex(s => s.id === staff.id)
-  )
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: 3, height: 'calc(100vh - 20px)', display: 'flex', flexDirection: 'column' }}>
+      {/* Header ส่วนควบคุม */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant='h5'>รายงาน Service Report ที่เลือก</Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Button variant='outlined' color='secondary' startIcon={<ArrowBackIcon />} onClick={handleBackClick}>
+        <Typography variant='h5' sx={{ fontWeight: 'bold' }}>
+          พรีวิวรายงาน Service Report
+        </Typography>
+        
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button 
+            variant='outlined' 
+            color='inherit' 
+            startIcon={<ArrowBackIcon />} 
+            onClick={() => router.back()}
+          >
             ย้อนกลับ
           </Button>
-
-          <FormControl sx={{ minWidth: 200 }} size='small'>
-            <InputLabel id='project-select-label'>เลือกโปรเจกต์</InputLabel>
-            <Select
-              labelId='project-select-label'
-              value={selectedProjectId}
-              label='เลือกโปรเจกต์'
-              onChange={e => setSelectedProjectId(e.target.value)}
-            >
-              {allProjects.map(project => (
-                <MenuItem key={project.id} value={project.id}>
-                  {project.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <Button variant='contained' color='primary' startIcon={<PrintIcon />} onClick={() => window.print()}>
-            พิมพ์รายงาน
+          
+          <Button 
+            variant='contained' 
+            color='primary' 
+            startIcon={<DownloadIcon />} 
+            onClick={handleDownload}
+            disabled={!pdfUrl}
+          >
+            ดาวน์โหลด PDF
           </Button>
         </Box>
       </Box>
 
-      <Box sx={{ p: 3 }}>
-        {/* ... โค้ดส่วนอื่นๆ ... */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-          {' '}
-          {/* เพิ่ม Box นี้ */}
-          <div
-            ref={reportRef}
-            style={{ width: '210mm', minHeight: '297mm', padding: '10mm', backgroundColor: 'white' }}
-          >
-            {/* ส่งข้อมูล Staff ไปให้ PrintableServiceReport ด้วย */}
-            <PrintableServiceReport
-              reports={allReports}
-              project={projectForPrintableReport || undefined}
-              serviceStaff={uniqueStaff}
-            />
-          </div>
-        </Box>
-        {/* ... โค้ดส่วนอื่นๆ ... */}
+      {/* พื้นที่แสดง PDF */}
+      <Box sx={{ 
+        flexGrow: 1, 
+        backgroundColor: '#525659', // สีพื้นหลังเข้มเหมือนตัวอ่าน PDF มาตรฐาน
+        borderRadius: 1, 
+        overflow: 'hidden', 
+        border: '1px solid #ddd',
+        boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)' 
+      }}>
+        {pdfUrl ? (
+          <iframe
+            src={`${pdfUrl}#toolbar=1&view=FitH`}
+            width="100%"
+            height="100%"
+            style={{ border: 'none' }}
+            title="Service Report Preview"
+          />
+        ) : (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+            <Typography sx={{ color: 'white' }}>ไม่สามารถโหลดตัวอย่างรายงานได้</Typography>
+          </Box>
+        )}
       </Box>
     </Box>
   )

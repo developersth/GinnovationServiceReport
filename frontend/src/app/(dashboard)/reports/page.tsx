@@ -232,11 +232,24 @@ export default function ServiceReportsPage() {
     }
   }
 
-  const handleGenerateReport = () => {
+const handleGenerateReport = () => {
     if (selectedReportIds.length > 0) {
       const idsParam = selectedReportIds.join(',')
+      
+      // ดึง projectId จากใบงานแรกที่เลือก (กรณีไม่ได้เลือกฟิลเตอร์โครงการไว้)
+      const firstSelectedReport = reports.find(r => r.id === selectedReportIds[0])
+      const projectId = activeFilterProject || firstSelectedReport?.projectId
 
-      router.push(`/reports/selected-reports?ids=${idsParam}`)
+      if (!projectId) {
+        setSnackbarMessage('ไม่พบข้อมูลโครงการในรายการที่เลือก')
+        setSnackbarSeverity('warning')
+        setSnackbarOpen(true)
+        return
+      }
+
+      // ส่งทั้ง ids และ projectId ไปยังหน้า Preview
+      // หมายเหตุ: ปรับ Path ให้ตรงกับโครงสร้างจริงของคุณ (เช่น /admin/reports/selected-reports)
+      router.push(`/reports/selected-reports?ids=${idsParam}&projectId=${projectId}`)
     } else {
       setSnackbarMessage('กรุณาเลือกร่างรายงานอย่างน้อยหนึ่งรายการเพื่อสร้างรายงาน')
       setSnackbarSeverity('info')
